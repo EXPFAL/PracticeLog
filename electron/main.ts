@@ -105,16 +105,16 @@ app.whenReady().then(() => {
     })
   }
 
-  const db = initDatabase()
+  initDatabase()
   applyApiConfig()
 
-  registerPracticeHandlers(db)
-  registerMaterialHandlers(db)
-  registerKnowledgeHandlers(db)
-  registerLogHandlers(db)
-  registerProjectHandlers(db)
-  registerExportHandlers(db)
-  registerSearchHandlers(db)
+  registerPracticeHandlers()
+  registerMaterialHandlers()
+  registerKnowledgeHandlers()
+  registerLogHandlers()
+  registerProjectHandlers()
+  registerExportHandlers()
+  registerSearchHandlers()
   registerSettingsHandlers()
 
   buildAppMenu()

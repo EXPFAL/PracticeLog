@@ -20,8 +20,6 @@ export interface ProjectStats {
   totalFiles: number
   totalLines: number
   languages: Record<string, { files: number; lines: number }>
-  gitDiffStat: string | null
-  recentContributors: string | null
 }
 
 const IGNORE_DIRS = new Set([
@@ -165,9 +163,7 @@ export async function scanProject(projectPath: string): Promise<ProjectScanResul
   const stats: ProjectStats = {
     totalFiles: 0,
     totalLines: 0,
-    languages: {},
-    gitDiffStat: null,
-    recentContributors: null
+    languages: {}
   }
 
   await countLines(projectPath, stats)
@@ -177,28 +173,6 @@ export async function scanProject(projectPath: string): Promise<ProjectScanResul
     .sort(([, a], [, b]) => b.lines - a.lines)
     .slice(0, 10)
   stats.languages = Object.fromEntries(sorted)
-
-  // Git shortstat (recent 7 days)
-  try {
-    const { stdout } = await execFileAsync('git', [
-      'log', '--since=7.days', '--shortstat', '--oneline'
-    ], { cwd: projectPath, timeout: 10000 })
-    const statLines = stdout.split('\n').filter(l => l.includes('file'))
-    if (statLines.length > 0) {
-      stats.gitDiffStat = statLines.slice(0, 3).join('\n')
-    }
-  } catch { /* ignore */ }
-
-  // Recent contributors
-  try {
-    const { stdout } = await execFileAsync('git', [
-      'log', '--since=30.days', '--format=%aN', '--no-merges'
-    ], { cwd: projectPath, timeout: 10000 })
-    const authors = [...new Set(stdout.trim().split('\n').filter(Boolean))]
-    if (authors.length > 0) {
-      stats.recentContributors = authors.slice(0, 5).join(', ')
-    }
-  } catch { /* ignore */ }
 
   const keySources = await collectKeySources(projectPath)
 

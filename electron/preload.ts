@@ -36,7 +36,6 @@ contextBridge.exposeInMainWorld('api', {
   projectCreate: (data: unknown) => ipcRenderer.invoke('project:create', data),
   projectUpdate: (id: number, data: unknown) => ipcRenderer.invoke('project:update', id, data),
   projectDelete: (id: number) => ipcRenderer.invoke('project:delete', id),
-  projectScan: (path: string) => ipcRenderer.invoke('project:scan', path),
   projectGenerate: (practiceId: number, path: string) => ipcRenderer.invoke('project:generate', practiceId, path),
 
   // Export

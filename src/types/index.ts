@@ -70,15 +70,6 @@ export interface SearchResult {
   snippet: string
 }
 
-export interface ProjectScanResult {
-  name: string
-  path: string
-  readme: string | null
-  fileTree: string
-  gitLog: string | null
-  packageJson: string | null
-}
-
 export interface AppSettingsPublic {
   theme: 'dark' | 'light'
   apiBaseUrl: string
@@ -117,7 +108,6 @@ export interface ElectronAPI {
   projectCreate: (data: Omit<ProjectArchive, 'id' | 'created_at'>) => Promise<number>
   projectUpdate: (id: number, data: Partial<Omit<ProjectArchive, 'id' | 'created_at'>>) => Promise<void>
   projectDelete: (id: number) => Promise<void>
-  projectScan: (path: string) => Promise<ProjectScanResult>
   projectGenerate: (practiceId: number, path: string) => Promise<ProjectArchive & { id: number }>
 
   exportMarkdownPreview: (practiceId: number) => Promise<string>

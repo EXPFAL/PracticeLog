@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
-import type Database from 'better-sqlite3'
 import { buildFtsQuery } from '../utils/fts'
+import { getDb } from '../database/index'
 
 export interface SearchResult {
   entity_type: string
@@ -10,9 +10,10 @@ export interface SearchResult {
   snippet: string
 }
 
-export function registerSearchHandlers(db: Database.Database): void {
+export function registerSearchHandlers(): void {
   ipcMain.handle('search:query', (_e, query: string, practiceId?: number, entityType?: string): SearchResult[] => {
     if (!query.trim()) return []
+    const db = getDb()
 
     const ftsQuery = buildFtsQuery(query)
 

@@ -7,6 +7,7 @@ import { getPractice } from '../database/practice'
 import { listKnowledgeItems } from '../database/knowledge'
 import { listDailyLogs } from '../database/daily-log'
 import { listProjectArchives } from '../database/project'
+import { getDb } from '../database/index'
 import { getDataDir, getExportsDir, assertExistingFile } from '../utils/paths'
 
 const md = new MarkdownIt()
@@ -84,19 +85,19 @@ async function buildMarkdown(db: Database.Database, practiceId: number): Promise
   return md_text
 }
 
-export function registerExportHandlers(db: Database.Database): void {
+export function registerExportHandlers(): void {
   ipcMain.handle('export:markdownPreview', async (_e, practiceId: number) => {
-    return buildMarkdown(db, practiceId)
+    return buildMarkdown(getDb(), practiceId)
   })
 
   ipcMain.handle('export:markdown', async (_e, practiceId: number) => {
     const exportsDir = getExportsDir()
     await mkdir(exportsDir, { recursive: true })
 
-    const practice = await getPractice(db, practiceId)
+    const practice = await getPractice(getDb(), practiceId)
     if (!practice) throw new Error('实践记录不存在')
 
-    const content = await buildMarkdown(db, practiceId)
+    const content = await buildMarkdown(getDb(), practiceId)
     const filename = `${practice.title.replace(/[\\/:*?"<>|]/g, '_')}.md`
     const filePath = join(exportsDir, filename)
     await writeFile(filePath, content, 'utf-8')
@@ -104,10 +105,10 @@ export function registerExportHandlers(db: Database.Database): void {
   })
 
   ipcMain.handle('export:pdf', async (event, practiceId: number) => {
-    const practice = await getPractice(db, practiceId)
+    const practice = await getPractice(getDb(), practiceId)
     if (!practice) throw new Error('实践记录不存在')
 
-    const content = await buildMarkdown(db, practiceId)
+    const content = await buildMarkdown(getDb(), practiceId)
     const htmlContent = md.render(content)
     const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>body{font-family:sans-serif;max-width:800px;margin:40px auto;padding:0 20px;line-height:1.6;color:#333}
@@ -118,21 +119,24 @@ blockquote{border-left:3px solid #ccc;margin:0.5em 0;padding:0.2em 1em;color:#66
 </head><body>${htmlContent}</body></html>`
 
     const win = new BrowserWindow({ show: false, webPreferences: { contextIsolation: true } })
-    await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(fullHtml)}`)
+    try {
+      await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(fullHtml)}`)
 
-    const pdfData = await win.webContents.printToPDF({
-      printBackground: true,
-      pageSize: 'A4',
-      margins: { top: 20, bottom: 20, left: 20, right: 20 }
-    })
-    win.close()
+      const pdfData = await win.webContents.printToPDF({
+        printBackground: true,
+        pageSize: 'A4',
+        margins: { top: 20, bottom: 20, left: 20, right: 20 }
+      })
 
-    const exportsDir = getExportsDir()
-    await mkdir(exportsDir, { recursive: true })
-    const filename = `${practice.title.replace(/[\\/:*?"<>|]/g, '_')}.pdf`
-    const filePath = join(exportsDir, filename)
-    await writeFile(filePath, pdfData)
-    return filePath
+      const exportsDir = getExportsDir()
+      await mkdir(exportsDir, { recursive: true })
+      const filename = `${practice.title.replace(/[\\/:*?"<>|]/g, '_')}.pdf`
+      const filePath = join(exportsDir, filename)
+      await writeFile(filePath, pdfData)
+      return filePath
+    } finally {
+      if (!win.isDestroyed()) win.close()
+    }
   })
 
   ipcMain.handle('dialog:openFolder', async () => {
@@ -171,6 +175,9 @@ blockquote{border-left:3px solid #ccc;margin:0.5em 0;padding:0.2em 1em;color:#66
     await mkdir(backupSubdir, { recursive: true })
 
     const dbPath = join(getDataDir(), 'practice.db')
+    // Force WAL frames back into the main db file so the copy is complete.
+    getDb().pragma('wal_checkpoint(TRUNCATE)')
+
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
     const backupPath = join(backupSubdir, `practice-${timestamp}.db`)
     await copyFile(dbPath, backupPath)
@@ -183,10 +190,14 @@ blockquote{border-left:3px solid #ccc;margin:0.5em 0;padding:0.2em 1em;color:#66
 
     const dbPath = join(getDataDir(), 'practice.db')
 
-    // Close current db, copy backup, reopen
+    // Close current db, copy backup, reopen. Handlers resolve the live instance
+    // via getDb(), so they automatically pick up the freshly opened database.
     const { closeDatabase, initDatabase } = await import('../database/index')
     closeDatabase()
-    await copyFile(backupPath, dbPath)
-    initDatabase()
+    try {
+      await copyFile(backupPath, dbPath)
+    } finally {
+      initDatabase()
+    }
   })
 }
