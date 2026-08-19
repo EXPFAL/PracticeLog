@@ -103,7 +103,7 @@ async function handleDelete() {
             <NButton size="tiny" @click="editingNote = false">取消</NButton>
           </NSpace>
         </div>
-        <div v-else-if="item.note" style="font-size: 12px; color: #1890ff; margin-top: 4px">
+        <div v-else-if="item.note" style="font-size: 12px; color: var(--n-color-info, #1890ff); margin-top: 4px">
           📝 {{ item.note }}
         </div>
       </div>

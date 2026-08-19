@@ -10,6 +10,7 @@ const selectedId = ref<number | null>(null)
 const markdownText = ref('')
 const exporting = ref(false)
 const loadingPreview = ref(false)
+const batchExporting = ref(false)
 
 const md = new MarkdownIt({ html: false, linkify: true })
 
@@ -65,6 +66,22 @@ async function handleExportPdf() {
     exporting.value = false
   }
 }
+
+async function handleBatchExport() {
+  batchExporting.value = true
+  try {
+    const paths: string[] = []
+    for (const p of practiceStore.practices) {
+      const path = await window.api.exportMarkdown(p.id)
+      paths.push(path)
+    }
+    message.success(`已导出 ${paths.length} 个文件到 exports/ 目录`)
+  } catch (e: unknown) {
+    message.error('批量导出失败: ' + String(e))
+  } finally {
+    batchExporting.value = false
+  }
+}
 </script>
 
 <template>
@@ -85,6 +102,9 @@ async function handleExportPdf() {
           </NButton>
           <NButton :disabled="!selectedId" :loading="exporting" @click="handleExportPdf">
             导出 PDF
+          </NButton>
+          <NButton :disabled="practiceStore.practices.length === 0" :loading="batchExporting" @click="handleBatchExport">
+            批量导出全部
           </NButton>
         </NSpace>
       </NSpace>
@@ -135,10 +155,10 @@ async function handleExportPdf() {
   margin: 16px 0;
 }
 .markdown-preview :deep(blockquote) {
-  border-left: 3px solid #18a058;
+  border-left: 3px solid var(--n-color-success, #18a058);
   margin: 8px 0;
   padding: 4px 12px;
-  color: #666;
+  color: var(--n-text-color-2, #666);
 }
 .markdown-preview :deep(ul), .markdown-preview :deep(ol) {
   padding-left: 24px;

@@ -13,7 +13,11 @@ const dragging = ref(false)
 onMounted(refresh)
 
 async function refresh() {
-  materials.value = await window.api.materialList(props.practiceId)
+  try {
+    materials.value = await window.api.materialList(props.practiceId)
+  } catch (e) {
+    console.error('Failed to load materials:', e)
+  }
 }
 
 async function handleAddUrl() {
@@ -116,9 +120,13 @@ async function handleExtract(mat: Material) {
 }
 
 async function handleDelete(id: number) {
-  await window.api.materialDelete(id)
-  await refresh()
-  message.success('已删除')
+  try {
+    await window.api.materialDelete(id)
+    await refresh()
+    message.success('已删除')
+  } catch (e: unknown) {
+    message.error('删除失败: ' + String(e))
+  }
 }
 </script>
 
@@ -156,8 +164,8 @@ async function handleDelete(id: number) {
               <NTag size="small" :type="mat.type === 'github' ? 'success' : mat.type === 'url' ? 'info' : 'default'" style="margin-left: 8px">
                 {{ mat.type }}
               </NTag>
-              <div style="font-size: 12px; color: #999; margin-top: 4px">{{ mat.path_or_url }}</div>
-              <div v-if="mat.extracted_text" style="font-size: 12px; color: #52c41a; margin-top: 2px">
+              <div style="font-size: 12px; color: var(--n-text-color-3, #999); margin-top: 4px">{{ mat.path_or_url }}</div>
+              <div v-if="mat.extracted_text" style="font-size: 12px; color: var(--n-color-success, #52c41a); margin-top: 2px">
                 ✓ 已提取文本 ({{ mat.extracted_text.length }} 字符)
               </div>
             </div>
@@ -190,8 +198,8 @@ async function handleDelete(id: number) {
 }
 .drop-zone:hover,
 .drop-zone--active {
-  border-color: #18a058;
-  background: #f0faf5;
+  border-color: var(--n-color-success, #18a058);
+  background: var(--n-color-success-suppl, #f0faf5);
 }
 .drop-zone__content {
   pointer-events: none;

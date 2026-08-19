@@ -26,6 +26,10 @@ const typeOptions = [
   { label: '项目', value: 'project' }
 ]
 
+function sanitizeSnippet(html: string): string {
+  return html.replace(/<(?!\/?b[ >])[^>]*>/g, '')
+}
+
 async function doSearch() {
   if (!query.value.trim()) { results.value = []; return }
   loading.value = true
@@ -80,7 +84,7 @@ function goToResult(item: SearchResult) {
           </NTag>
           <strong>{{ item.title }}</strong>
         </NSpace>
-        <div v-if="item.snippet" style="font-size: 13px; color: var(--n-text-color-2); margin-top: 4px;" v-html="item.snippet" />
+        <div v-if="item.snippet" style="font-size: 13px; color: var(--n-text-color-2); margin-top: 4px;" v-html="sanitizeSnippet(item.snippet)" />
       </NListItem>
     </NList>
   </div>

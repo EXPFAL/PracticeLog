@@ -6,11 +6,15 @@ export const usePracticeStore = defineStore('practice', () => {
   const practices = ref<Practice[]>([])
   const current = ref<Practice | null>(null)
   const loading = ref(false)
+  const error = ref<string | null>(null)
 
   async function fetchAll() {
     loading.value = true
+    error.value = null
     try {
       practices.value = await window.api.practiceList()
+    } catch (e) {
+      error.value = String(e)
     } finally {
       loading.value = false
     }
@@ -32,7 +36,7 @@ export const usePracticeStore = defineStore('practice', () => {
 
   async function remove(id: number) {
     await window.api.practiceDelete(id)
-    practices.value = practices.value.filter(p => p.id !== id)
+    await fetchAll()
     if (current.value?.id === id) current.value = null
   }
 
@@ -47,5 +51,5 @@ export const usePracticeStore = defineStore('practice', () => {
     return current.value
   }
 
-  return { practices, current, loading, fetchAll, create, update, remove, getById }
+  return { practices, current, loading, error, fetchAll, create, update, remove, getById }
 })

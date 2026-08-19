@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
 import { NCard, NDatePicker, NForm, NFormItem, NInput, NButton, NSpace, NList, NListItem, NTag, NSelect, NPopconfirm, useMessage } from 'naive-ui'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
@@ -59,6 +59,20 @@ function applyTemplate(val: string) {
   }
 }
 
+const isEditing = computed(() => {
+  const dateStr = formatDate(selectedDate.value)
+  return logStore.logs.some(l => l.date === dateStr)
+})
+
+function handleKeydown(e: KeyboardEvent) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault()
+    handleSave()
+  }
+}
+onMounted(() => window.addEventListener('keydown', handleKeydown))
+onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
+
 function formatDate(ts: number): string {
   return new Date(ts).toISOString().slice(0, 10)
 }
@@ -92,7 +106,7 @@ watch(() => props.externalDate, (newDate) => {
 })
 
 async function handleDeleteLog(id: number) {
-  await logStore.remove(id)
+  await logStore.remove(id, props.practiceId)
   message.success('日志已删除')
 }
 
@@ -112,6 +126,10 @@ async function handleSave() {
 
 <template>
   <NCard title="日志编辑器" size="small">
+    <template #header-extra>
+      <NTag v-if="isEditing" type="warning" size="small">编辑已有日志</NTag>
+      <NTag v-else type="info" size="small">新建日志</NTag>
+    </template>
     <NForm label-placement="top">
       <NSpace>
         <NFormItem label="日期">
@@ -163,7 +181,7 @@ async function handleSave() {
           </NPopconfirm>
         </NSpace>
         <div v-if="log.what_done" style="margin-top: 4px; font-size: 13px">{{ log.what_done }}</div>
-        <div v-if="log.problems" style="margin-top: 2px; font-size: 12px; color: #e88">❓ {{ log.problems }}</div>
+        <div v-if="log.problems" style="margin-top: 2px; font-size: 12px; color: var(--n-color-error, #e88)">❓ {{ log.problems }}</div>
       </NListItem>
       <NListItem v-if="logStore.logs.length > 10 && !showAllLogs">
         <NButton quaternary size="small" @click="showAllLogs = true">

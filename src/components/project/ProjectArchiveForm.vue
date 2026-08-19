@@ -70,7 +70,7 @@ async function handleManualCreate() {
 }
 
 async function handleDelete(id: number) {
-  await projectStore.remove(id)
+  await projectStore.remove(id, props.practiceId)
   message.success('已删除')
 }
 

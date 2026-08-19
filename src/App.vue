@@ -75,8 +75,8 @@ function handleSearchInput(val: string) {
     <NMessageProvider>
       <NDialogProvider>
         <div v-if="error" style="padding: 48px; text-align: center;">
-          <h2 style="color: #d03050;">应用出错了</h2>
-          <p style="color: #666; margin: 12px 0;">{{ error.message }}</p>
+          <h2 style="color: var(--n-color-error, #d03050);">应用出错了</h2>
+          <p style="color: var(--n-text-color-2, #666); margin: 12px 0;">{{ error.message }}</p>
           <NButton type="primary" @click="error = null; $router.go(0)">刷新页面</NButton>
         </div>
         <NLayout v-else has-sider style="height: 100vh">

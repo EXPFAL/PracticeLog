@@ -25,9 +25,9 @@ defineEmits<{
 
     <NSpace vertical :size="8">
       <div v-if="project.summary" style="font-size: 14px">{{ project.summary }}</div>
-      <div v-if="project.tech_stack" style="font-size: 13px; color: #666">🛠 {{ project.tech_stack }}</div>
-      <div v-if="project.role" style="font-size: 13px; color: #666">👤 {{ project.role }}</div>
-      <div v-if="project.real_involvement" style="font-size: 13px; color: #fa8c16">📊 {{ project.real_involvement }}</div>
+      <div v-if="project.tech_stack" style="font-size: 13px; color: var(--n-text-color-2, #666)">🛠 {{ project.tech_stack }}</div>
+      <div v-if="project.role" style="font-size: 13px; color: var(--n-text-color-2, #666)">👤 {{ project.role }}</div>
+      <div v-if="project.real_involvement" style="font-size: 13px; color: var(--n-color-warning, #fa8c16)">📊 {{ project.real_involvement }}</div>
 
       <NDivider v-if="project.problems_solved || project.lessons || project.unknowns" style="margin: 8px 0" />
 
@@ -37,7 +37,7 @@ defineEmits<{
       <div v-if="project.lessons" style="font-size: 13px">
         <strong>学到的:</strong> {{ project.lessons }}
       </div>
-      <div v-if="project.unknowns" style="font-size: 13px; color: #f5222d">
+      <div v-if="project.unknowns" style="font-size: 13px; color: var(--n-color-error, #f5222d)">
         <strong>还不懂的:</strong> {{ project.unknowns }}
       </div>
       <div v-if="project.interview_script" style="font-size: 13px; background: var(--n-color, #f6f6f6); padding: 8px; border-radius: 4px; border: 1px solid var(--n-border-color, #eee)">

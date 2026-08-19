@@ -5,11 +5,15 @@ import type { DailyLog } from '../types'
 export const useLogStore = defineStore('log', () => {
   const logs = ref<DailyLog[]>([])
   const loading = ref(false)
+  const error = ref<string | null>(null)
 
   async function fetch(practiceId: number) {
     loading.value = true
+    error.value = null
     try {
       logs.value = await window.api.logList(practiceId)
+    } catch (e) {
+      error.value = String(e)
     } finally {
       loading.value = false
     }
@@ -21,10 +25,10 @@ export const useLogStore = defineStore('log', () => {
     return id
   }
 
-  async function remove(id: number) {
+  async function remove(id: number, practiceId: number) {
     await window.api.logDelete(id)
-    logs.value = logs.value.filter(l => l.id !== id)
+    await fetch(practiceId)
   }
 
-  return { logs, loading, fetch, create, remove }
+  return { logs, loading, error, fetch, create, remove }
 })

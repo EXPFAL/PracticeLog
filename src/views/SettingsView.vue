@@ -55,7 +55,7 @@ async function handleSaveApiKey() {
           </NTag>
         </NFormItem>
       </NForm>
-      <p style="font-size: 12px; color: #999; margin-top: 8px;">
+      <p style="font-size: 12px; color: var(--n-text-color-3); margin-top: 8px;">
         此处设置的 Key 仅在本次会话生效。持久化请通过 PowerShell 环境变量设置：
         <code>$env:DEEPSEEK_API_KEY = "sk-xxxx"</code>
       </p>
@@ -65,13 +65,13 @@ async function handleSaveApiKey() {
       <NSpace vertical :size="12">
         <div>
           <strong>数据库位置</strong>
-          <p style="font-size: 13px; color: #666;">开发模式: E:\Work\PracticeLog\data\practice.db</p>
-          <p style="font-size: 13px; color: #666;">生产模式: %AppData%\practice-log\data\practice.db</p>
+          <p style="font-size: 13px; color: var(--n-text-color-2);">开发模式: E:\Work\PracticeLog\data\practice.db</p>
+          <p style="font-size: 13px; color: var(--n-text-color-2);">生产模式: %AppData%\practice-log\data\practice.db</p>
         </div>
         <div>
           <strong>导出目录</strong>
-          <p style="font-size: 13px; color: #666;">开发模式: E:\Work\PracticeLog\exports\</p>
-          <p style="font-size: 13px; color: #666;">生产模式: %AppData%\practice-log\exports\</p>
+          <p style="font-size: 13px; color: var(--n-text-color-2);">开发模式: E:\Work\PracticeLog\exports\</p>
+          <p style="font-size: 13px; color: var(--n-text-color-2);">生产模式: %AppData%\practice-log\exports\</p>
         </div>
       </NSpace>
     </NCard>

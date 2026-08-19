@@ -5,11 +5,15 @@ import type { KnowledgeItem } from '../types'
 export const useKnowledgeStore = defineStore('knowledge', () => {
   const items = ref<KnowledgeItem[]>([])
   const loading = ref(false)
+  const error = ref<string | null>(null)
 
   async function fetch(practiceId: number) {
     loading.value = true
+    error.value = null
     try {
       items.value = await window.api.knowledgeList(practiceId)
+    } catch (e) {
+      error.value = String(e)
     } finally {
       loading.value = false
     }
@@ -29,7 +33,7 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
 
   async function remove(id: number, practiceId: number) {
     await window.api.knowledgeDelete(id)
-    items.value = items.value.filter(i => i.id !== id)
+    await fetch(practiceId)
   }
 
   async function generate(practiceId: number) {
@@ -38,5 +42,5 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     return count
   }
 
-  return { items, loading, fetch, create, update, remove, generate }
+  return { items, loading, error, fetch, create, update, remove, generate }
 })

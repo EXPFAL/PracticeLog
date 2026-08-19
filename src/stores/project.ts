@@ -5,11 +5,15 @@ import type { ProjectArchive } from '../types'
 export const useProjectStore = defineStore('project', () => {
   const projects = ref<ProjectArchive[]>([])
   const loading = ref(false)
+  const error = ref<string | null>(null)
 
   async function fetch(practiceId: number) {
     loading.value = true
+    error.value = null
     try {
       projects.value = await window.api.projectList(practiceId)
+    } catch (e) {
+      error.value = String(e)
     } finally {
       loading.value = false
     }
@@ -21,9 +25,9 @@ export const useProjectStore = defineStore('project', () => {
     if (idx >= 0) projects.value[idx] = { ...projects.value[idx], ...data }
   }
 
-  async function remove(id: number) {
+  async function remove(id: number, practiceId: number) {
     await window.api.projectDelete(id)
-    projects.value = projects.value.filter(p => p.id !== id)
+    await fetch(practiceId)
   }
 
   async function generate(practiceId: number, path: string) {
@@ -32,5 +36,5 @@ export const useProjectStore = defineStore('project', () => {
     return result
   }
 
-  return { projects, loading, fetch, update, remove, generate }
+  return { projects, loading, error, fetch, update, remove, generate }
 })
