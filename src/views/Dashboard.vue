@@ -31,9 +31,11 @@ onMounted(async () => {
 })
 
 const practiceCount = computed(() => practiceStore.practices.length)
+const totalItems = computed(() => allKnowledge.value.length)
 const mastered = computed(() => allKnowledge.value.filter(i => i.status === '已掌握').length)
 const learning = computed(() => allKnowledge.value.filter(i => i.status === '学习中').length)
 const unlearned = computed(() => allKnowledge.value.filter(i => i.status === '未学').length)
+const masteryRate = computed(() => totalItems.value > 0 ? Math.round((mastered.value / totalItems.value) * 100) : 0)
 
 function openPractice(id: number) {
   router.push(`/practice/${id}`)
@@ -66,8 +68,8 @@ async function handleImport() {
 
 <template>
   <div>
-    <NSpace justify="space-between" align="center" style="margin-bottom: 24px">
-      <h2>PracticeLog</h2>
+    <NSpace justify="space-between" align="center" style="margin-bottom: 20px">
+      <h2 style="margin: 0">总览</h2>
       <NSpace>
         <NButton size="small" @click="handleImport">导入备份</NButton>
         <NButton size="small" :loading="backingUp" @click="handleBackup">备份数据库</NButton>
@@ -86,35 +88,49 @@ async function handleImport() {
     </template>
 
     <template v-else>
-      <NGrid :cols="2" :x-gap="16" :y-gap="16" style="margin-bottom: 24px">
+      <!-- 学习进度 hero -->
+      <NCard style="margin-bottom: 20px">
+        <NGrid :cols="3" :x-gap="24" :y-gap="16" align-items="center">
+          <NGi span="1">
+            <ProgressPie :mastered="mastered" :learning="learning" :unlearned="unlearned" />
+          </NGi>
+          <NGi span="2">
+            <div style="font-size: 18px; font-weight: 600; margin-bottom: 12px">学习进度</div>
+            <div style="font-size: 13px; color: var(--n-text-color-2, #666); line-height: 2">
+              已掌握 <strong style="color: var(--n-color-success, #18a058)">{{ mastered }}</strong>
+              &nbsp;·&nbsp; 学习中 <strong style="color: var(--n-color-warning, #f0a020)">{{ learning }}</strong>
+              &nbsp;·&nbsp; 未学 <strong style="color: var(--n-color-error, #d03050)">{{ unlearned }}</strong>
+            </div>
+            <div style="margin-top: 8px; font-size: 14px">
+              整体掌握率
+              <span style="font-size: 28px; font-weight: 700; margin-left: 10px">{{ masteryRate }}%</span>
+              <span style="font-size: 13px; color: var(--n-text-color-3, #999); margin-left: 10px">（{{ mastered }}/{{ totalItems }} 项）</span>
+            </div>
+          </NGi>
+        </NGrid>
+      </NCard>
+
+      <!-- 统计条 -->
+      <NGrid :cols="3" :x-gap="16" :y-gap="16" style="margin-bottom: 20px">
         <NGi>
           <NCard>
             <NStatistic label="实践记录" :value="practiceCount" />
           </NCard>
         </NGi>
         <NGi>
-          <NCard title="学习进度">
-            <ProgressPie :mastered="mastered" :learning="learning" :unlearned="unlearned" />
+          <NCard>
+            <NStatistic label="学习条目" :value="totalItems" />
+          </NCard>
+        </NGi>
+        <NGi>
+          <NCard>
+            <NStatistic label="最近日志" :value="recentLogs.length" />
           </NCard>
         </NGi>
       </NGrid>
 
-      <NGrid :cols="2" :x-gap="16" :y-gap="16" style="margin-bottom: 24px">
-        <NGi>
-          <NCard title="最近日志" v-if="recentLogs.length > 0">
-            <NList bordered>
-              <NListItem v-for="log in recentLogs" :key="log.id">
-                <div style="display: flex; justify-content: space-between; align-items: center">
-                  <NTag size="small" type="info">{{ log.date }}</NTag>
-                </div>
-                <div v-if="log.what_done" style="font-size: 13px; margin-top: 4px">{{ log.what_done }}</div>
-              </NListItem>
-            </NList>
-          </NCard>
-          <NCard v-else title="最近日志">
-            <NEmpty description="还没有日志记录" />
-          </NCard>
-        </NGi>
+      <!-- 最近列表 -->
+      <NGrid :cols="2" :x-gap="16" :y-gap="16">
         <NGi>
           <NCard title="最近实践">
             <template v-if="practiceStore.practices.length === 0" #header-extra>
@@ -142,6 +158,19 @@ async function handleImport() {
                   </div>
                   <NTag v-if="p.start_date" size="small" type="info">{{ p.start_date }}</NTag>
                 </div>
+              </NListItem>
+            </NList>
+          </NCard>
+        </NGi>
+        <NGi>
+          <NCard title="最近日志">
+            <NEmpty v-if="recentLogs.length === 0" description="还没有日志记录" />
+            <NList v-else bordered>
+              <NListItem v-for="log in recentLogs" :key="log.id">
+                <div style="display: flex; justify-content: space-between; align-items: center">
+                  <NTag size="small" type="info">{{ log.date }}</NTag>
+                </div>
+                <div v-if="log.what_done" style="font-size: 13px; margin-top: 4px">{{ log.what_done }}</div>
               </NListItem>
             </NList>
           </NCard>

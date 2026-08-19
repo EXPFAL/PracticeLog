@@ -3,31 +3,48 @@ import { ref, onMounted } from 'vue'
 import { NCard, NForm, NFormItem, NInput, NButton, NSpace, NTag, useMessage } from 'naive-ui'
 
 const message = useMessage()
+const apiBaseUrl = ref('')
+const apiModel = ref('')
 const apiKey = ref('')
-const apiKeyStatus = ref(false)
+const apiKeyConfigured = ref(false)
 const saving = ref(false)
 
 onMounted(async () => {
-  const status = await window.api.aiConfigGet()
-  apiKeyStatus.value = status.configured
+  const s = await window.api.settingsGet()
+  apiBaseUrl.value = s.apiBaseUrl
+  apiModel.value = s.apiModel
+  apiKeyConfigured.value = s.apiKeyConfigured
 })
 
-async function handleSaveApiKey() {
-  if (!apiKey.value.trim()) {
-    message.warning('请输入 API Key')
+async function handleSave() {
+  if (!apiBaseUrl.value.trim() || !apiModel.value.trim()) {
+    message.warning('请填写 API 地址和模型名称')
     return
   }
   saving.value = true
   try {
-    await window.api.aiConfigSet(apiKey.value.trim())
-    apiKeyStatus.value = true
+    const patch: { apiBaseUrl: string; apiModel: string; apiKey?: string } = {
+      apiBaseUrl: apiBaseUrl.value.trim().replace(/\/+$/, ''),
+      apiModel: apiModel.value.trim()
+    }
+    if (apiKey.value.trim()) {
+      patch.apiKey = apiKey.value.trim()
+    }
+    const s = await window.api.settingsSet(patch)
+    apiKeyConfigured.value = s.apiKeyConfigured
     apiKey.value = ''
-    message.success('API Key 已配置（本次会话有效，重启后需通过环境变量设置）')
+    message.success('设置已保存')
   } catch (e: unknown) {
-    message.error('配置失败: ' + String(e))
+    message.error('保存失败: ' + String(e))
   } finally {
     saving.value = false
   }
+}
+
+async function handleClearKey() {
+  await window.api.settingsSet({ apiKey: '' })
+  apiKeyConfigured.value = false
+  message.success('已清除 API Key')
 }
 </script>
 
@@ -35,29 +52,47 @@ async function handleSaveApiKey() {
   <div>
     <h2 style="margin-bottom: 24px">设置</h2>
 
-    <NCard title="AI 配置" style="margin-bottom: 24px;">
+    <NCard title="AI 配置（OpenAI 兼容 API）" style="margin-bottom: 24px;">
       <NForm label-placement="top">
-        <NFormItem label="DeepSeek API Key">
+        <NFormItem label="API 地址" required>
+          <NInput
+            v-model:value="apiBaseUrl"
+            placeholder="https://api.deepseek.com"
+            style="max-width: 480px"
+          />
+        </NFormItem>
+        <NFormItem label="模型名称" required>
+          <NInput
+            v-model:value="apiModel"
+            placeholder="deepseek-chat"
+            style="max-width: 480px"
+          />
+        </NFormItem>
+        <NFormItem label="API Key">
           <NSpace>
             <NInput
               v-model:value="apiKey"
               type="password"
               show-password-on="click"
-              placeholder="sk-..."
+              placeholder="sk-...（留空则保持已保存的 Key 不变）"
               style="width: 400px"
             />
-            <NButton type="primary" :loading="saving" @click="handleSaveApiKey">设置</NButton>
+            <NButton type="primary" :loading="saving" @click="handleSave">保存</NButton>
+            <NButton v-if="apiKeyConfigured" @click="handleClearKey">清除 Key</NButton>
           </NSpace>
         </NFormItem>
         <NFormItem label="状态">
-          <NTag :type="apiKeyStatus ? 'success' : 'warning'">
-            {{ apiKeyStatus ? '已配置' : '未配置（需通过 $env:DEEPSEEK_API_KEY 或此处设置）' }}
+          <NTag :type="apiKeyConfigured ? 'success' : 'warning'">
+            {{ apiKeyConfigured ? '已配置' : '未配置' }}
           </NTag>
+          <span style="font-size: 12px; color: var(--n-text-color-3); margin-left: 8px;">
+            也可通过环境变量 $env:DEEPSEEK_API_KEY 提供
+          </span>
         </NFormItem>
       </NForm>
       <p style="font-size: 12px; color: var(--n-text-color-3); margin-top: 8px;">
-        此处设置的 Key 仅在本次会话生效。持久化请通过 PowerShell 环境变量设置：
-        <code>$env:DEEPSEEK_API_KEY = "sk-xxxx"</code>
+        API 地址、模型名称和 API Key 保存在本机配置文件（userData/settings.json），不会提交到代码库。
+        默认为 DeepSeek，可改为任意 OpenAI 兼容接口。
       </p>
     </NCard>
 

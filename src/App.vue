@@ -17,6 +17,7 @@ const theme = computed(() => isDark.value ? darkTheme : null)
 watch(isDark, (val) => {
   localStorage.setItem('theme', val ? 'dark' : 'light')
   document.documentElement.style.colorScheme = val ? 'dark' : 'light'
+  window.api.settingsSet({ theme: val ? 'dark' : 'light' }).catch(() => {})
 })
 
 // Apply on load
@@ -44,7 +45,14 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => window.addEventListener('keydown', handleKeydown))
+onMounted(async () => {
+  window.addEventListener('keydown', handleKeydown)
+  window.api.onMenuNavigate((path) => router.push(path))
+  try {
+    const s = await window.api.settingsGet()
+    isDark.value = s.theme === 'dark'
+  } catch { /* keep local cache */ }
+})
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   if (debounceTimer) clearTimeout(debounceTimer)

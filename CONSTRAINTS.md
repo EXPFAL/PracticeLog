@@ -43,10 +43,11 @@
 - 安装依赖时使用 `--save` 或 `--save-dev`，确保写入 package.json
 
 ### 2.2 环境变量
-- `DEEPSEEK_API_KEY`：通过 PowerShell `$env:` 设置，不写入任何文件
+- `DEEPSEEK_API_KEY`：通过 PowerShell `$env:` 设置
 - `electron_config_cache`：如需设置，指向 `E:\Work\PracticeLog\.electron-cache`
 - `npm_config_cache`：如需自定义，指向 `E:\Work\PracticeLog\.npm-cache`
 - **禁止**将 API Key 写入 `.env` 文件、代码、或任何会被提交的文件
+- API Key 可选持久化到 `userData/settings.json`（用户 2026-08-19 决定；该文件在本机用户目录、不在项目目录内，不会被 git 提交）。`settings.json` 同时存放主题、API 地址、模型名称等非敏感设置
 
 ### 2.3 配置文件
 - `.gitignore` 必须包含：`node_modules/`、`*.db`、`.env`、`.electron-cache/`、`.npm-cache/`、`.tmp/`
@@ -59,6 +60,7 @@
 
 ### 3.1 敏感信息
 - API Key 只在主进程中使用，不暴露给渲染进程
+- API Key 可保存于 `userData/settings.json`；渲染进程只能查询"是否已配置"，不返回明文 Key
 - preload 脚本只暴露最小必要的 IPC 接口
 - 不在前端代码中硬编码任何密钥或 token
 

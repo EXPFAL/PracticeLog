@@ -1,27 +1,32 @@
 import OpenAI from 'openai'
 import type { ProjectScanResult } from '../utils/project-scanner'
+import { getSettings } from '../settings'
 
-let apiKey: string | null = null
 let client: OpenAI | null = null
 
-export function setApiKey(key: string): void {
-  apiKey = key
-  client = new OpenAI({ baseURL: 'https://api.deepseek.com', apiKey: key })
+function getApiKey(): string | null {
+  return getSettings().apiKey || process.env.DEEPSEEK_API_KEY || null
 }
 
-export function getApiKey(): string | null {
-  return apiKey || process.env.DEEPSEEK_API_KEY || null
+function getModel(): string {
+  return getSettings().apiModel || 'deepseek-chat'
+}
+
+/** (Re)build the OpenAI client from persisted settings. Call after settings change or at startup. */
+export function applyApiConfig(): void {
+  const key = getApiKey()
+  client = key ? new OpenAI({ baseURL: getSettings().apiBaseUrl, apiKey: key }) : null
 }
 
 export function isConfigured(): boolean {
-  return !!(apiKey || process.env.DEEPSEEK_API_KEY)
+  return !!getApiKey()
 }
 
 function getClient(): OpenAI {
   if (client) return client
-  const envKey = process.env.DEEPSEEK_API_KEY
-  if (!envKey) throw new Error('未配置 DeepSeek API Key。请通过 $env:DEEPSEEK_API_KEY 设置，或在应用中配置。')
-  client = new OpenAI({ baseURL: 'https://api.deepseek.com', apiKey: envKey })
+  const key = getApiKey()
+  if (!key) throw new Error('未配置 API Key。请在「设置」中配置 API Key。')
+  client = new OpenAI({ baseURL: getSettings().apiBaseUrl, apiKey: key })
   return client
 }
 
@@ -37,7 +42,7 @@ export async function generateKnowledgeList(materials: string[]): Promise<Genera
   const combinedText = materials.join('\n\n---\n\n').slice(0, 12000)
 
   const response = await c.chat.completions.create({
-    model: 'deepseek-chat',
+    model: getModel(),
     temperature: 0.3,
     response_format: { type: 'json_object' },
     messages: [
@@ -87,7 +92,7 @@ export async function generateProjectArchive(projectInfo: ProjectScanResult): Pr
   ].filter(Boolean).join('\n\n')
 
   const response = await c.chat.completions.create({
-    model: 'deepseek-chat',
+    model: getModel(),
     temperature: 0.3,
     response_format: { type: 'json_object' },
     messages: [

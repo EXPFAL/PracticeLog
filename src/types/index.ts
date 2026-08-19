@@ -79,6 +79,13 @@ export interface ProjectScanResult {
   packageJson: string | null
 }
 
+export interface AppSettingsPublic {
+  theme: 'dark' | 'light'
+  apiBaseUrl: string
+  apiModel: string
+  apiKeyConfigured: boolean
+}
+
 export interface ElectronAPI {
   practiceList: () => Promise<Practice[]>
   practiceCreate: (data: Omit<Practice, 'id' | 'created_at'>) => Promise<number>
@@ -123,8 +130,9 @@ export interface ElectronAPI {
   dbSelectBackup: () => Promise<string | null>
   searchQuery: (query: string, practiceId?: number, entityType?: string) => Promise<SearchResult[]>
 
-  aiConfigGet: () => Promise<{ configured: boolean }>
-  aiConfigSet: (key: string) => Promise<{ configured: boolean }>
+  settingsGet: () => Promise<AppSettingsPublic>
+  settingsSet: (patch: Partial<Pick<AppSettingsPublic, 'theme' | 'apiBaseUrl' | 'apiModel'> & { apiKey?: string }>) => Promise<AppSettingsPublic>
+  onMenuNavigate: (callback: (path: string) => void) => void
 
   updateDownload: () => Promise<void>
   updateInstall: () => void
