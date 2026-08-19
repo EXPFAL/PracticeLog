@@ -33,8 +33,10 @@ export function initDatabase(): Database.Database {
 }
 
 function populateFts(database: Database.Database): void {
-  // Clear and rebuild FTS index
-  database.exec('DELETE FROM fts_search')
+  // Clear and rebuild FTS index.
+  // fts_search is a contentless table (content=''), which does NOT support DELETE —
+  // the FTS5 'delete-all' command is the documented way to clear such tables.
+  database.prepare("INSERT INTO fts_search(fts_search) VALUES('delete-all')").run()
 
   const insertFts = database.prepare(
     'INSERT INTO fts_search (entity_type, entity_id, practice_id, title, body) VALUES (?, ?, ?, ?, ?)'
