@@ -79,6 +79,7 @@ export async function generateKnowledgeList(materials: string[]): Promise<Genera
   const response = await c.chat.completions.create({
     model: getModel(),
     temperature: 0.3,
+    max_tokens: 8192,
     response_format: { type: 'json_object' },
     messages: [
       {

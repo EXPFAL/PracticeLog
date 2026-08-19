@@ -1,14 +1,7 @@
 import { ipcMain } from 'electron'
 import { buildFtsQuery } from '../utils/fts'
 import { getDb } from '../database/index'
-
-export interface SearchResult {
-  entity_type: string
-  entity_id: number
-  practice_id: number
-  title: string
-  snippet: string
-}
+import type { SearchResult } from '../../shared/types'
 
 export function registerSearchHandlers(): void {
   ipcMain.handle('search:query', (_e, query: string, practiceId?: number, entityType?: string): SearchResult[] => {

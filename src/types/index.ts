@@ -1,3 +1,5 @@
+import type { SearchResult } from '../../shared/types'
+
 export interface Practice {
   id: number
   title: string
@@ -62,13 +64,7 @@ export interface ProjectArchive {
   created_at: string
 }
 
-export interface SearchResult {
-  entity_type: 'practice' | 'knowledge' | 'log' | 'project'
-  entity_id: number
-  practice_id: number
-  title: string
-  snippet: string
-}
+export type { SearchResult }
 
 export interface AppSettingsPublic {
   theme: 'dark' | 'light'
