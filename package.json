@@ -58,6 +58,7 @@
     "asarUnpack": [
       "node_modules/better-sqlite3/**/*"
     ],
+    "electronDist": "node_modules/electron/dist",
     "win": {
       "icon": "build/icon.ico",
       "target": [
