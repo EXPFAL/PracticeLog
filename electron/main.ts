@@ -8,6 +8,7 @@ import { registerLogHandlers } from './handlers/log'
 import { registerProjectHandlers } from './handlers/project'
 import { registerExportHandlers } from './handlers/export'
 import { registerAiConfigHandlers } from './handlers/ai-config'
+import { setupAutoUpdater } from './ai/updater'
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -39,6 +40,7 @@ app.whenReady().then(() => {
   registerAiConfigHandlers()
 
   createWindow()
+  setupAutoUpdater()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

@@ -91,6 +91,10 @@ async function buildMarkdown(db: Database.Database, practiceId: number): Promise
 }
 
 export function registerExportHandlers(db: Database.Database): void {
+  ipcMain.handle('export:markdownPreview', async (_e, practiceId: number) => {
+    return buildMarkdown(db, practiceId)
+  })
+
   ipcMain.handle('export:markdown', async (_e, practiceId: number) => {
     const exportsDir = getExportsDir()
     await mkdir(exportsDir, { recursive: true })
@@ -149,7 +153,7 @@ blockquote{border-left:3px solid #ccc;margin:0.5em 0;padding:0.2em 1em;color:#66
     const result = await dialog.showOpenDialog({
       properties: ['openFile', 'multiSelections'],
       filters: [
-        { name: '文档', extensions: ['pdf', 'txt', 'md', 'rst', 'log', 'csv'] },
+        { name: '文档', extensions: ['pdf', 'pptx', 'txt', 'md', 'rst', 'log', 'csv'] },
         { name: '所有文件', extensions: ['*'] }
       ]
     })

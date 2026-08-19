@@ -99,6 +99,7 @@ export interface ElectronAPI {
   projectScan: (path: string) => Promise<ProjectScanResult>
   projectGenerate: (practiceId: number, path: string) => Promise<ProjectArchive & { id: number }>
 
+  exportMarkdownPreview: (practiceId: number) => Promise<string>
   exportMarkdown: (practiceId: number) => Promise<string>
   exportPdf: (practiceId: number) => Promise<string>
 
@@ -108,4 +109,12 @@ export interface ElectronAPI {
 
   aiConfigGet: () => Promise<{ configured: boolean }>
   aiConfigSet: (key: string) => Promise<{ configured: boolean }>
+
+  updateCheck: () => Promise<{ available: boolean; version: string | null }>
+  updateDownload: () => Promise<void>
+  updateInstall: () => void
+  updateStatus: () => Promise<{ available: boolean; info: { version: string; releaseNotes?: string } | null }>
+  onUpdateAvailable: (callback: (info: { version: string }) => void) => void
+  onUpdateProgress: (callback: (progress: { percent: number }) => void) => void
+  onUpdateDownloaded: (callback: () => void) => void
 }

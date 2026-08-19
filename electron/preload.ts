@@ -34,6 +34,7 @@ contextBridge.exposeInMainWorld('api', {
   projectGenerate: (practiceId: number, path: string) => ipcRenderer.invoke('project:generate', practiceId, path),
 
   // Export
+  exportMarkdownPreview: (practiceId: number) => ipcRenderer.invoke('export:markdownPreview', practiceId),
   exportMarkdown: (practiceId: number) => ipcRenderer.invoke('export:markdown', practiceId),
   exportPdf: (practiceId: number) => ipcRenderer.invoke('export:pdf', practiceId),
 
@@ -46,5 +47,20 @@ contextBridge.exposeInMainWorld('api', {
 
   // AI Config
   aiConfigGet: () => ipcRenderer.invoke('ai:config:get'),
-  aiConfigSet: (key: string) => ipcRenderer.invoke('ai:config:set', key)
+  aiConfigSet: (key: string) => ipcRenderer.invoke('ai:config:set', key),
+
+  // Auto Update
+  updateCheck: () => ipcRenderer.invoke('update:check'),
+  updateDownload: () => ipcRenderer.invoke('update:download'),
+  updateInstall: () => ipcRenderer.invoke('update:install'),
+  updateStatus: () => ipcRenderer.invoke('update:status'),
+  onUpdateAvailable: (callback: (info: unknown) => void) => {
+    ipcRenderer.on('update:available', (_e, info) => callback(info))
+  },
+  onUpdateProgress: (callback: (progress: unknown) => void) => {
+    ipcRenderer.on('update:progress', (_e, progress) => callback(progress))
+  },
+  onUpdateDownloaded: (callback: () => void) => {
+    ipcRenderer.on('update:downloaded', () => callback())
+  }
 })
