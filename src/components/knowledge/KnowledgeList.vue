@@ -62,6 +62,8 @@ async function handleGenerateFromProject() {
     if (planMd) {
       studyPlanMd.value = planMd
       showPlanDrawer.value = true
+    } else {
+      message.warning('知识点已生成，但补课计划为空，请重试')
     }
   } catch (e: unknown) {
     message.error('生成失败: ' + String(e))
