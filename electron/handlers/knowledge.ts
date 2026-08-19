@@ -5,7 +5,7 @@ import {
   deleteKnowledgeItem, batchCreateKnowledgeItems
 } from '../database/knowledge'
 import { listMaterials } from '../database/material'
-import { generateKnowledgeList, generateKnowledgeListFromProject } from '../ai/deepseek'
+import { generateKnowledgeList, generateStudyPlanAndItems } from '../ai/deepseek'
 import { scanProject } from '../utils/project-scanner'
 import { assertExistingDir } from '../utils/paths'
 import { rebuildFts } from '../database/index'
@@ -58,7 +58,7 @@ export function registerKnowledgeHandlers(db: Database.Database): void {
   ipcMain.handle('knowledge:generateFromProject', async (_e, practiceId: number, projectPath: string) => {
     await assertExistingDir(projectPath)
     const scanResult = await scanProject(projectPath)
-    const generated = await generateKnowledgeListFromProject(scanResult)
+    const { items: generated, planMd } = await generateStudyPlanAndItems(scanResult)
 
     const items = generated.map((item, index) => ({
       practice_id: practiceId,
@@ -74,6 +74,6 @@ export function registerKnowledgeHandlers(db: Database.Database): void {
 
     batchCreateKnowledgeItems(db, items)
     rebuildFts()
-    return items.length
+    return { count: items.length, planMd }
   })
 }
