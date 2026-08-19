@@ -20,6 +20,10 @@ export async function listKnowledgeItems(db: Database.Database, practiceId: numb
   ).all(practiceId) as KnowledgeItemRow[]
 }
 
+export async function listAllKnowledgeItems(db: Database.Database): Promise<KnowledgeItemRow[]> {
+  return db.prepare('SELECT * FROM knowledge_item ORDER BY practice_id, order_index, id').all() as KnowledgeItemRow[]
+}
+
 export async function createKnowledgeItem(
   db: Database.Database,
   data: Omit<KnowledgeItemRow, 'id' | 'created_at'>

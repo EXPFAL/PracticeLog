@@ -22,14 +22,6 @@ const practiceId = Number(route.params.id)
 
 provide('practiceId', practiceId)
 
-onMounted(async () => {
-  const practice = await practiceStore.getById(practiceId)
-  if (!practice) {
-    notFound.value = true
-  }
-  loading.value = false
-})
-
 function handleKeydown(e: KeyboardEvent) {
   if (e.ctrlKey || e.metaKey) {
     if (e.key === '1') { activeTab.value = 'config'; e.preventDefault() }
@@ -39,7 +31,13 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => window.addEventListener('keydown', handleKeydown))
+onMounted(async () => {
+  window.addEventListener('keydown', handleKeydown)
+  const practice = await practiceStore.getById(practiceId)
+  if (!practice) notFound.value = true
+  loading.value = false
+})
+
 onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 </script>
 

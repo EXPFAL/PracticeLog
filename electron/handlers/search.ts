@@ -10,7 +10,7 @@ export interface SearchResult {
 }
 
 export function registerSearchHandlers(db: Database.Database): void {
-  ipcMain.handle('search:query', (_e, query: string, practiceId?: number): SearchResult[] => {
+  ipcMain.handle('search:query', (_e, query: string, practiceId?: number, entityType?: string): SearchResult[] => {
     if (!query.trim()) return []
 
     const ftsQuery = query.trim().split(/\s+/).map(w => `"${w}"`).join(' OR ')
@@ -27,6 +27,10 @@ export function registerSearchHandlers(db: Database.Database): void {
       sql += ' AND practice_id = ?'
       params.push(practiceId)
     }
+    if (entityType) {
+      sql += ' AND entity_type = ?'
+      params.push(entityType)
+    }
 
     sql += ' ORDER BY rank LIMIT 50'
 
@@ -35,10 +39,5 @@ export function registerSearchHandlers(db: Database.Database): void {
     } catch {
       return []
     }
-  })
-
-  ipcMain.handle('search:rebuild', () => {
-    const { rebuildFts } = require('../database/index')
-    rebuildFts()
   })
 }

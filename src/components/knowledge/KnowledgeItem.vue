@@ -10,6 +10,7 @@ const message = useMessage()
 const editingNote = ref(false)
 const editNote = ref(props.item.note ?? '')
 const showEditDrawer = ref(false)
+const saving = ref(false)
 
 const editForm = ref({
   concept: props.item.concept,
@@ -42,16 +43,23 @@ async function handleSaveNote() {
 }
 
 async function handleSaveEdit() {
-  await knowledgeStore.update(props.item.id, {
-    concept: editForm.value.concept,
-    one_line_explain: editForm.value.one_line_explain || null,
-    importance: editForm.value.importance,
-    resource: editForm.value.resource || null,
-    note: editForm.value.note || null,
-    ai_generated: 0
-  })
-  showEditDrawer.value = false
-  message.success('已更新')
+  saving.value = true
+  try {
+    await knowledgeStore.update(props.item.id, {
+      concept: editForm.value.concept,
+      one_line_explain: editForm.value.one_line_explain || null,
+      importance: editForm.value.importance,
+      resource: editForm.value.resource || null,
+      note: editForm.value.note || null,
+      ai_generated: 0
+    })
+    showEditDrawer.value = false
+    message.success('已更新')
+  } catch (e: unknown) {
+    message.error('更新失败: ' + String(e))
+  } finally {
+    saving.value = false
+  }
 }
 
 function openEditDrawer() {
@@ -74,7 +82,7 @@ async function handleDelete() {
 <template>
   <div style="padding: 8px 0; border-bottom: 1px solid var(--n-border-color, #f0f0f0)">
     <NSpace justify="space-between" align="flex-start">
-      <div style="flex: 1; cursor: pointer" @click="openEditDrawer">
+      <div style="flex: 1; cursor: pointer" role="button" tabindex="0" aria-label="编辑知识点" @click="openEditDrawer" @keydown.enter="openEditDrawer">
         <NSpace align="center" :size="8">
           <strong>{{ item.concept }}</strong>
           <NTag v-if="item.ai_generated" size="tiny" type="warning">AI</NTag>
@@ -82,10 +90,10 @@ async function handleDelete() {
             {{ item.importance }}
           </NTag>
         </NSpace>
-        <div v-if="item.one_line_explain" style="font-size: 13px; color: #666; margin-top: 4px">
+        <div v-if="item.one_line_explain" style="font-size: 13px; color: var(--n-text-color-2); margin-top: 4px">
           {{ item.one_line_explain }}
         </div>
-        <div v-if="item.resource" style="font-size: 12px; color: #999; margin-top: 2px">
+        <div v-if="item.resource" style="font-size: 12px; color: var(--n-text-color-3); margin-top: 2px">
           📚 {{ item.resource }}
         </div>
         <div v-if="editingNote" style="margin-top: 8px" @click.stop>
@@ -140,7 +148,7 @@ async function handleDelete() {
         <template #footer>
           <NSpace>
             <NButton @click="showEditDrawer = false">取消</NButton>
-            <NButton type="primary" @click="handleSaveEdit">保存</NButton>
+            <NButton type="primary" :loading="saving" @click="handleSaveEdit">保存</NButton>
           </NSpace>
         </template>
       </NDrawerContent>

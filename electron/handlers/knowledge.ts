@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import type Database from 'better-sqlite3'
 import {
-  listKnowledgeItems, createKnowledgeItem, updateKnowledgeItem,
+  listKnowledgeItems, listAllKnowledgeItems, createKnowledgeItem, updateKnowledgeItem,
   deleteKnowledgeItem, batchCreateKnowledgeItems
 } from '../database/knowledge'
 import { listMaterials } from '../database/material'
@@ -10,6 +10,7 @@ import { rebuildFts } from '../database/index'
 
 export function registerKnowledgeHandlers(db: Database.Database): void {
   ipcMain.handle('knowledge:list', (_e, practiceId: number) => listKnowledgeItems(db, practiceId))
+  ipcMain.handle('knowledge:listAll', () => listAllKnowledgeItems(db))
   ipcMain.handle('knowledge:create', async (_e, data) => {
     const id = await createKnowledgeItem(db, data)
     rebuildFts()

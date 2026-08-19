@@ -47,8 +47,8 @@ const segments = computed(() => {
 
 <template>
   <div style="display: flex; align-items: center; gap: 16px;">
-    <svg v-if="hasData" viewBox="0 0 100 100" width="80" height="80">
-      <circle cx="50" cy="50" r="40" fill="none" stroke="#e0e0e0" stroke-width="12" />
+    <svg v-if="hasData" viewBox="0 0 100 100" width="80" height="80" role="img" :aria-label="'学习进度: 已掌握 ' + mastered + ', 学习中 ' + learning + ', 未学 ' + unlearned">
+      <circle cx="50" cy="50" r="40" fill="none" stroke="var(--n-border-color, #e0e0e0)" stroke-width="12" />
       <path
         v-for="(seg, i) in segments"
         :key="i"
@@ -61,7 +61,7 @@ const segments = computed(() => {
       <text x="50" y="47" text-anchor="middle" font-size="14" font-weight="bold" fill="currentColor">
         {{ total }}
       </text>
-      <text x="50" y="60" text-anchor="middle" font-size="7" fill="#999">
+      <text x="50" y="60" text-anchor="middle" font-size="7" fill="var(--n-text-color-3, #999)">
         总计
       </text>
     </svg>
@@ -71,6 +71,6 @@ const segments = computed(() => {
         {{ seg.label }}: {{ seg.value }} ({{ seg.pct }}%)
       </div>
     </div>
-    <div v-else style="font-size: 13px; color: #999;">暂无学习数据</div>
+    <div v-else style="font-size: 13px; color: var(--n-text-color-3, #999);">暂无学习数据</div>
   </div>
 </template>

@@ -30,10 +30,7 @@ const allTags = computed(() => {
   const tags = new Set<string>()
   for (const p of practiceStore.practices) {
     if (p.direction_tags) {
-      try {
-        const parsed = JSON.parse(p.direction_tags) as string[]
-        parsed.forEach(t => tags.add(t))
-      } catch { /* ignore */ }
+      try { (JSON.parse(p.direction_tags) as string[]).forEach(t => tags.add(t)) } catch { /* ignore */ }
     }
   }
   return [...tags].map(t => ({ label: t, value: t }))
@@ -43,10 +40,7 @@ const filteredPractices = computed(() => {
   if (!filterTag.value) return practiceStore.practices
   return practiceStore.practices.filter(p => {
     if (!p.direction_tags) return false
-    try {
-      const tags = JSON.parse(p.direction_tags) as string[]
-      return tags.includes(filterTag.value!)
-    } catch { return false }
+    try { return (JSON.parse(p.direction_tags) as string[]).includes(filterTag.value!) } catch { return false }
   })
 })
 
@@ -60,14 +54,10 @@ function parseTags(tags: string | null): string[] {
 }
 
 async function handleCreate() {
-  if (!form.value.title.trim()) {
-    message.warning('请输入实践标题')
-    return
-  }
+  if (!form.value.title.trim()) { message.warning('请输入实践标题'); return }
   const tags = form.value.direction_tags
     ? JSON.stringify(form.value.direction_tags.split(/[,，、]/).map(s => s.trim()).filter(Boolean))
     : null
-
   await practiceStore.create({
     title: form.value.title.trim(),
     start_date: formatDate(form.value.start_date),
@@ -87,6 +77,17 @@ async function handleDelete(id: number) {
   message.success('已删除')
 }
 
+async function handleDuplicate(id: number) {
+  try {
+    const newId = await window.api.practiceDuplicate(id)
+    await practiceStore.fetchAll()
+    message.success('复制成功')
+    router.push(`/practice/${newId}`)
+  } catch (e: unknown) {
+    message.error('复制失败: ' + String(e))
+  }
+}
+
 function openDetail(id: number) {
   router.push(`/practice/${id}`)
 }
@@ -97,14 +98,7 @@ function openDetail(id: number) {
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px">
       <h2>实践列表</h2>
       <NSpace>
-        <NSelect
-          v-if="allTags.length > 0"
-          v-model:value="filterTag"
-          :options="allTags"
-          placeholder="按标签筛选"
-          clearable
-          style="width: 160px"
-        />
+        <NSelect v-if="allTags.length > 0" v-model:value="filterTag" :options="allTags" placeholder="按标签筛选" clearable style="width: 160px" />
         <NButton type="primary" @click="showCreate = true">新建实践</NButton>
       </NSpace>
     </div>
@@ -119,22 +113,25 @@ function openDetail(id: number) {
       <NEmpty v-if="filteredPractices.length === 0" :description="filterTag ? `没有「${filterTag}」相关的实践` : '还没有实践记录，点击右上角新建'" />
       <NGrid v-else :cols="2" :x-gap="16" :y-gap="16">
         <NGi v-for="p in filteredPractices" :key="p.id">
-          <NCard hoverable style="cursor: pointer" @click="openDetail(p.id)">
+          <NCard hoverable role="button" tabindex="0" style="cursor: pointer" :aria-label="'查看实践: ' + p.title" @click="openDetail(p.id)" @keydown.enter="openDetail(p.id)">
             <template #header>
               <span @click.stop>{{ p.title }}</span>
             </template>
             <template #header-extra>
-              <NPopconfirm @positive-click.stop="handleDelete(p.id)">
-                <template #trigger>
-                  <NButton size="small" type="error" quaternary @click.stop>删除</NButton>
-                </template>
-                确认删除「{{ p.title }}」？
-              </NPopconfirm>
+              <NSpace :size="4">
+                <NButton size="small" quaternary @click.stop="handleDuplicate(p.id)">复制</NButton>
+                <NPopconfirm @positive-click.stop="handleDelete(p.id)">
+                  <template #trigger>
+                    <NButton size="small" type="error" quaternary @click.stop>删除</NButton>
+                  </template>
+                  确认删除「{{ p.title }}」？
+                </NPopconfirm>
+              </NSpace>
             </template>
             <NSpace vertical :size="8">
-              <div v-if="p.location" style="font-size: 13px; color: #666">{{ p.location }}</div>
-              <div v-if="p.advisor" style="font-size: 13px; color: #666">{{ p.advisor }}</div>
-              <div v-if="p.start_date" style="font-size: 13px; color: #666">{{ p.start_date }} — {{ p.end_date || '进行中' }}</div>
+              <div v-if="p.location" style="font-size: 13px; color: var(--n-text-color-2)">{{ p.location }}</div>
+              <div v-if="p.advisor" style="font-size: 13px; color: var(--n-text-color-2)">{{ p.advisor }}</div>
+              <div v-if="p.start_date" style="font-size: 13px; color: var(--n-text-color-2)">{{ p.start_date }} — {{ p.end_date || '进行中' }}</div>
               <NSpace v-if="p.direction_tags" :size="4">
                 <NTag
                   v-for="tag in parseTags(p.direction_tags)"
@@ -142,7 +139,11 @@ function openDetail(id: number) {
                   size="small"
                   :type="filterTag === tag ? 'success' : 'default'"
                   style="cursor: pointer"
+                  tabindex="0"
+                  role="button"
+                  :aria-label="'筛选标签: ' + tag"
                   @click.stop="filterTag = filterTag === tag ? null : tag"
+                  @keydown.enter.stop="filterTag = filterTag === tag ? null : tag"
                 >
                   {{ tag }}
                 </NTag>

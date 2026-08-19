@@ -84,6 +84,7 @@ export interface ElectronAPI {
   practiceCreate: (data: Omit<Practice, 'id' | 'created_at'>) => Promise<number>
   practiceUpdate: (id: number, data: Partial<Omit<Practice, 'id' | 'created_at'>>) => Promise<void>
   practiceDelete: (id: number) => Promise<void>
+  practiceDuplicate: (id: number) => Promise<number>
 
   materialList: (practiceId: number) => Promise<Material[]>
   materialAdd: (data: { practice_id: number; name: string; type: string; path_or_url: string }) => Promise<number>
@@ -95,11 +96,14 @@ export interface ElectronAPI {
   knowledgeUpdate: (id: number, data: Partial<Omit<KnowledgeItem, 'id' | 'created_at'>>) => Promise<void>
   knowledgeDelete: (id: number) => Promise<void>
   knowledgeGenerate: (practiceId: number) => Promise<number>
+  knowledgeListAll: () => Promise<KnowledgeItem[]>
 
   logList: (practiceId: number) => Promise<DailyLog[]>
   logGet: (id: number) => Promise<DailyLog | undefined>
   logCreate: (data: { practice_id: number; date: string; what_done?: string; problems?: string; solutions?: string; reflection?: string }) => Promise<number>
   logDelete: (id: number) => Promise<void>
+  logListAll: () => Promise<DailyLog[]>
+  logRecent: (limit: number) => Promise<DailyLog[]>
 
   projectList: (practiceId: number) => Promise<ProjectArchive[]>
   projectCreate: (data: Omit<ProjectArchive, 'id' | 'created_at'>) => Promise<number>
@@ -117,7 +121,7 @@ export interface ElectronAPI {
   dbBackup: () => Promise<string>
   dbImport: (backupPath: string) => Promise<void>
   dbSelectBackup: () => Promise<string | null>
-  searchQuery: (query: string, practiceId?: number) => Promise<SearchResult[]>
+  searchQuery: (query: string, practiceId?: number, entityType?: string) => Promise<SearchResult[]>
   searchRebuild: () => Promise<void>
 
   aiConfigGet: () => Promise<{ configured: boolean }>

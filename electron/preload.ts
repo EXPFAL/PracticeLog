@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('api', {
   practiceCreate: (data: unknown) => ipcRenderer.invoke('practice:create', data),
   practiceUpdate: (id: number, data: unknown) => ipcRenderer.invoke('practice:update', id, data),
   practiceDelete: (id: number) => ipcRenderer.invoke('practice:delete', id),
+  practiceDuplicate: (id: number) => ipcRenderer.invoke('practice:duplicate', id),
 
   // Material
   materialList: (practiceId: number) => ipcRenderer.invoke('material:list', practiceId),
@@ -19,12 +20,15 @@ contextBridge.exposeInMainWorld('api', {
   knowledgeUpdate: (id: number, data: unknown) => ipcRenderer.invoke('knowledge:update', id, data),
   knowledgeDelete: (id: number) => ipcRenderer.invoke('knowledge:delete', id),
   knowledgeGenerate: (practiceId: number) => ipcRenderer.invoke('knowledge:generate', practiceId),
+  knowledgeListAll: () => ipcRenderer.invoke('knowledge:listAll'),
 
   // Daily Log
   logList: (practiceId: number) => ipcRenderer.invoke('log:list', practiceId),
   logGet: (id: number) => ipcRenderer.invoke('log:get', id),
   logCreate: (data: unknown) => ipcRenderer.invoke('log:create', data),
   logDelete: (id: number) => ipcRenderer.invoke('log:delete', id),
+  logListAll: () => ipcRenderer.invoke('log:listAll'),
+  logRecent: (limit: number) => ipcRenderer.invoke('log:recent', limit),
 
   // Project
   projectList: (practiceId: number) => ipcRenderer.invoke('project:list', practiceId),
@@ -49,7 +53,7 @@ contextBridge.exposeInMainWorld('api', {
   dbSelectBackup: () => ipcRenderer.invoke('dialog:openBackup'),
 
   // Search
-  searchQuery: (query: string, practiceId?: number) => ipcRenderer.invoke('search:query', query, practiceId),
+  searchQuery: (query: string, practiceId?: number, entityType?: string) => ipcRenderer.invoke('search:query', query, practiceId, entityType),
   searchRebuild: () => ipcRenderer.invoke('search:rebuild'),
 
   // AI Config

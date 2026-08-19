@@ -135,8 +135,8 @@ async function handleDelete(id: number) {
       >
         <div class="drop-zone__content">
           <div style="font-size: 24px; margin-bottom: 8px">📄</div>
-          <div style="font-size: 14px; color: #666">拖拽文件到这里上传</div>
-          <div style="font-size: 12px; color: #999; margin-top: 4px">支持 PDF / TXT / MD 等文档</div>
+          <div style="font-size: 14px; color: var(--n-text-color-2)">拖拽文件到这里上传</div>
+          <div style="font-size: 12px; color: var(--n-text-color-3); margin-top: 4px">支持 PDF / TXT / MD 等文档</div>
         </div>
       </div>
 
@@ -181,7 +181,7 @@ async function handleDelete(id: number) {
 
 <style scoped>
 .drop-zone {
-  border: 2px dashed #d9d9d9;
+  border: 2px dashed var(--n-border-color, #d9d9d9);
   border-radius: 8px;
   padding: 24px;
   text-align: center;

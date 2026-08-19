@@ -79,8 +79,13 @@ function populateFts(database: Database.Database): void {
   populate()
 }
 
+let ftsDebounceTimer: ReturnType<typeof setTimeout> | null = null
 export function rebuildFts(): void {
-  if (db) populateFts(db)
+  if (!db) return
+  if (ftsDebounceTimer) clearTimeout(ftsDebounceTimer)
+  ftsDebounceTimer = setTimeout(() => {
+    try { if (db) populateFts(db) } catch { /* ignore */ }
+  }, 500)
 }
 
 export function closeDatabase(): void {

@@ -37,8 +37,12 @@ const stats = computed(() => {
 })
 
 async function handleGenerate() {
-  const count = await knowledgeStore.generate(props.practiceId)
-  message.success(`AI 生成了 ${count} 个知识点`)
+  try {
+    const count = await knowledgeStore.generate(props.practiceId)
+    message.success(`AI 生成了 ${count} 个知识点`)
+  } catch (e: unknown) {
+    message.error('生成失败: ' + String(e))
+  }
 }
 
 async function handleAdd() {

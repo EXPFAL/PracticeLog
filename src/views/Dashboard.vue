@@ -15,20 +15,19 @@ const loading = ref(true)
 const backingUp = ref(false)
 
 onMounted(async () => {
-  await practiceStore.fetchAll()
-  const allLogs: DailyLog[] = []
-  const allItems: KnowledgeItem[] = []
-  for (const p of practiceStore.practices) {
-    try {
-      const items = await window.api.knowledgeList(p.id)
-      allItems.push(...items)
-      const logs = await window.api.logList(p.id)
-      allLogs.push(...logs)
-    } catch { /* ignore */ }
+  try {
+    await practiceStore.fetchAll()
+    const [items, logs] = await Promise.all([
+      window.api.knowledgeListAll(),
+      window.api.logRecent(5)
+    ])
+    allKnowledge.value = items
+    recentLogs.value = logs
+  } catch (e) {
+    console.error('Dashboard load error:', e)
+  } finally {
+    loading.value = false
   }
-  allKnowledge.value = allItems
-  recentLogs.value = allLogs.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5)
-  loading.value = false
 })
 
 const practiceCount = computed(() => practiceStore.practices.length)
@@ -75,7 +74,6 @@ async function handleImport() {
       </NSpace>
     </NSpace>
 
-    <!-- Skeleton loading -->
     <template v-if="loading">
       <NGrid :cols="2" :x-gap="16" :y-gap="16" style="margin-bottom: 24px">
         <NGi><NCard><NSkeleton text :repeat="2" /></NCard></NGi>
@@ -127,13 +125,17 @@ async function handleImport() {
               <NListItem
                 v-for="p in practiceStore.practices.slice(0, 5)"
                 :key="p.id"
+                role="link"
+                tabindex="0"
                 style="cursor: pointer"
+                :aria-label="'查看实践: ' + p.title"
                 @click="openPractice(p.id)"
+                @keydown.enter="openPractice(p.id)"
               >
                 <div style="display: flex; justify-content: space-between; align-items: center">
                   <div>
                     <strong>{{ p.title }}</strong>
-                    <div style="font-size: 12px; color: #999; margin-top: 4px">
+                    <div style="font-size: 12px; color: var(--n-text-color-3); margin-top: 4px">
                       {{ p.location || '未设置地点' }}
                       <template v-if="p.advisor"> · {{ p.advisor }}</template>
                     </div>

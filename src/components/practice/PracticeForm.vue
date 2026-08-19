@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted } from 'vue'
 import { NForm, NFormItem, NInput, NDatePicker, NButton, NSpace, useMessage } from 'naive-ui'
 import { usePracticeStore } from '../../stores/practice'
 
 const props = defineProps<{ practiceId: number }>()
 const practiceStore = usePracticeStore()
 const message = useMessage()
+const saving = ref(false)
 
 const form = ref({
   title: '',
@@ -37,26 +38,36 @@ function formatDate(ts: number | null): string | null {
 }
 
 async function handleSave() {
-  const tags = form.value.direction_tags
-    ? JSON.stringify(form.value.direction_tags.split(/[,，、]/).map(s => s.trim()).filter(Boolean))
-    : null
-
-  await practiceStore.update(props.practiceId, {
-    title: form.value.title,
-    start_date: formatDate(form.value.start_date),
-    end_date: formatDate(form.value.end_date),
-    location: form.value.location || null,
-    advisor: form.value.advisor || null,
-    direction_tags: tags,
-    notes: form.value.notes || null
-  })
-  message.success('保存成功')
+  if (!form.value.title.trim()) {
+    message.warning('请输入实践标题')
+    return
+  }
+  saving.value = true
+  try {
+    const tags = form.value.direction_tags
+      ? JSON.stringify(form.value.direction_tags.split(/[,，、]/).map(s => s.trim()).filter(Boolean))
+      : null
+    await practiceStore.update(props.practiceId, {
+      title: form.value.title.trim(),
+      start_date: formatDate(form.value.start_date),
+      end_date: formatDate(form.value.end_date),
+      location: form.value.location || null,
+      advisor: form.value.advisor || null,
+      direction_tags: tags,
+      notes: form.value.notes || null
+    })
+    message.success('保存成功')
+  } catch (e: unknown) {
+    message.error('保存失败: ' + String(e))
+  } finally {
+    saving.value = false
+  }
 }
 </script>
 
 <template>
   <NForm label-placement="top" style="max-width: 600px">
-    <NFormItem label="标题">
+    <NFormItem label="标题" required>
       <NInput v-model:value="form.title" />
     </NFormItem>
     <NSpace>
@@ -80,7 +91,7 @@ async function handleSave() {
       <NInput v-model:value="form.notes" type="textarea" :rows="3" />
     </NFormItem>
     <NFormItem>
-      <NButton type="primary" @click="handleSave">保存</NButton>
+      <NButton type="primary" :loading="saving" @click="handleSave">保存</NButton>
     </NFormItem>
   </NForm>
 </template>

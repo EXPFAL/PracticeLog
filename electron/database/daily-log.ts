@@ -17,6 +17,10 @@ export async function listDailyLogs(db: Database.Database, practiceId: number): 
   ).all(practiceId) as DailyLogRow[]
 }
 
+export async function listAllDailyLogs(db: Database.Database): Promise<DailyLogRow[]> {
+  return db.prepare('SELECT * FROM daily_log ORDER BY date DESC').all() as DailyLogRow[]
+}
+
 export async function getDailyLog(db: Database.Database, id: number): Promise<DailyLogRow | undefined> {
   return db.prepare('SELECT * FROM daily_log WHERE id = ?').get(id) as DailyLogRow | undefined
 }
