@@ -21,6 +21,11 @@ export async function listAllDailyLogs(db: Database.Database): Promise<DailyLogR
   return db.prepare('SELECT * FROM daily_log ORDER BY date DESC').all() as DailyLogRow[]
 }
 
+export async function listRecentDailyLogs(db: Database.Database, limit: number): Promise<DailyLogRow[]> {
+  const safeLimit = Math.min(Math.max(Math.floor(limit) || 5, 1), 100)
+  return db.prepare('SELECT * FROM daily_log ORDER BY date DESC LIMIT ?').all(safeLimit) as DailyLogRow[]
+}
+
 export async function getDailyLog(db: Database.Database, id: number): Promise<DailyLogRow | undefined> {
   return db.prepare('SELECT * FROM daily_log WHERE id = ?').get(id) as DailyLogRow | undefined
 }

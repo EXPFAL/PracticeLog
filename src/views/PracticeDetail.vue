@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, provide, onUnmounted } from 'vue'
+import { onMounted, ref, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NTabs, NTabPane, NPageHeader, NButton, NSpace, NSkeleton, NResult } from 'naive-ui'
 import { usePracticeStore } from '../stores/practice'
@@ -19,8 +19,6 @@ const activeTab = ref('config')
 const selectedLogDate = ref<string | null>(null)
 
 const practiceId = Number(route.params.id)
-
-provide('practiceId', practiceId)
 
 function handleKeydown(e: KeyboardEvent) {
   if (e.ctrlKey || e.metaKey) {

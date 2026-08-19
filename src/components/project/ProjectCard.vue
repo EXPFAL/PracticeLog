@@ -14,6 +14,7 @@ defineEmits<{
     <template #header-extra>
       <NSpace :size="4">
         <NTag v-if="project.ai_generated" size="tiny" type="warning">AI 生成</NTag>
+        <NButton size="tiny" type="primary" quaternary @click="$emit('edit', project)">编辑</NButton>
         <NPopconfirm @positive-click="$emit('delete', project.id)">
           <template #trigger>
             <NButton size="tiny" type="error" quaternary>删除</NButton>

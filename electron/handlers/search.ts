@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import type Database from 'better-sqlite3'
+import { buildFtsQuery } from '../utils/fts'
 
 export interface SearchResult {
   entity_type: string
@@ -13,7 +14,7 @@ export function registerSearchHandlers(db: Database.Database): void {
   ipcMain.handle('search:query', (_e, query: string, practiceId?: number, entityType?: string): SearchResult[] => {
     if (!query.trim()) return []
 
-    const ftsQuery = query.trim().split(/\s+/).map(w => `"${w}"`).join(' OR ')
+    const ftsQuery = buildFtsQuery(query)
 
     let sql = `
       SELECT entity_type, entity_id, practice_id, title,
@@ -36,7 +37,8 @@ export function registerSearchHandlers(db: Database.Database): void {
 
     try {
       return db.prepare(sql).all(...params) as SearchResult[]
-    } catch {
+    } catch (e) {
+      console.error('FTS search failed:', e)
       return []
     }
   })

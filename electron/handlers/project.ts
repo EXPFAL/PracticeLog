@@ -4,6 +4,7 @@ import { listProjectArchives, createProjectArchive, updateProjectArchive, delete
 import { scanProject } from '../utils/project-scanner'
 import { generateProjectArchive as aiGenerate } from '../ai/deepseek'
 import { rebuildFts } from '../database/index'
+import { assertExistingDir } from '../utils/paths'
 
 export function registerProjectHandlers(db: Database.Database): void {
   ipcMain.handle('project:list', (_e, practiceId: number) => listProjectArchives(db, practiceId))
@@ -22,10 +23,12 @@ export function registerProjectHandlers(db: Database.Database): void {
   })
 
   ipcMain.handle('project:scan', async (_e, projectPath: string) => {
+    await assertExistingDir(projectPath)
     return scanProject(projectPath)
   })
 
   ipcMain.handle('project:generate', async (_e, practiceId: number, projectPath: string) => {
+    await assertExistingDir(projectPath)
     const scanResult = await scanProject(projectPath)
     const draft = await aiGenerate(scanResult)
     const id = await createProjectArchive(db, {

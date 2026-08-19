@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { NCard, NButton, NSpace, NCollapse, NCollapseItem, NTag, NEmpty, NSpin, NDrawer, NDrawerContent, NForm, NFormItem, NInput, NSelect, useMessage } from 'naive-ui'
+import { NButton, NSpace, NCollapse, NCollapseItem, NTag, NEmpty, NSpin, NDrawer, NDrawerContent, NForm, NFormItem, NInput, NSelect, useMessage } from 'naive-ui'
 import { useKnowledgeStore } from '../../stores/knowledge'
 import AiGenerateButton from '../common/AiGenerateButton.vue'
 import KnowledgeItem from './KnowledgeItem.vue'

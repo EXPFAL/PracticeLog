@@ -1,8 +1,8 @@
 import Database from 'better-sqlite3'
-import { app } from 'electron'
-import { join } from 'path'
 import { mkdirSync } from 'fs'
+import { join } from 'path'
 import { SCHEMA_SQL } from './schema'
+import { getDataDir } from '../utils/paths'
 
 let db: Database.Database | null = null
 
@@ -12,9 +12,7 @@ export function getDb(): Database.Database {
 }
 
 export function initDatabase(): Database.Database {
-  const dataDir = app.isPackaged
-    ? join(app.getPath('userData'), 'data')
-    : join(app.getAppPath(), 'data')
+  const dataDir = getDataDir()
   mkdirSync(dataDir, { recursive: true })
 
   const dbPath = join(dataDir, 'practice.db')
@@ -27,7 +25,7 @@ export function initDatabase(): Database.Database {
   populateFts(db)
 
   // Periodic WAL checkpoint (every 5 minutes)
-  setInterval(() => {
+  checkpointTimer = setInterval(() => {
     try { db?.pragma('wal_checkpoint(PASSIVE)') } catch { /* ignore */ }
   }, 5 * 60 * 1000)
 
@@ -80,6 +78,7 @@ function populateFts(database: Database.Database): void {
 }
 
 let ftsDebounceTimer: ReturnType<typeof setTimeout> | null = null
+let checkpointTimer: ReturnType<typeof setInterval> | null = null
 export function rebuildFts(): void {
   if (!db) return
   if (ftsDebounceTimer) clearTimeout(ftsDebounceTimer)
@@ -89,6 +88,14 @@ export function rebuildFts(): void {
 }
 
 export function closeDatabase(): void {
+  if (checkpointTimer) {
+    clearInterval(checkpointTimer)
+    checkpointTimer = null
+  }
+  if (ftsDebounceTimer) {
+    clearTimeout(ftsDebounceTimer)
+    ftsDebounceTimer = null
+  }
   if (db) {
     try { db.pragma('wal_checkpoint(TRUNCATE)') } catch { /* ignore */ }
     db.close()

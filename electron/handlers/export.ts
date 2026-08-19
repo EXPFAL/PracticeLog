@@ -1,21 +1,15 @@
-import { ipcMain, BrowserWindow, dialog } from 'electron'
+import { ipcMain, BrowserWindow, dialog, app } from 'electron'
 import type Database from 'better-sqlite3'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
-import { app } from 'electron'
 import MarkdownIt from 'markdown-it'
 import { getPractice } from '../database/practice'
 import { listKnowledgeItems } from '../database/knowledge'
 import { listDailyLogs } from '../database/daily-log'
 import { listProjectArchives } from '../database/project'
+import { getDataDir, getExportsDir, assertExistingFile } from '../utils/paths'
 
 const md = new MarkdownIt()
-
-function getExportsDir(): string {
-  return app.isPackaged
-    ? join(app.getPath('userData'), 'exports')
-    : join(app.getAppPath(), 'exports')
-}
 
 async function buildMarkdown(db: Database.Database, practiceId: number): Promise<string> {
   const practice = await getPractice(db, practiceId)
@@ -176,10 +170,7 @@ blockquote{border-left:3px solid #ccc;margin:0.5em 0;padding:0.2em 1em;color:#66
     const backupSubdir = join(backupDir, 'backup')
     await mkdir(backupSubdir, { recursive: true })
 
-    const dataDir = app.isPackaged
-      ? join(app.getPath('userData'), 'data')
-      : join(app.getAppPath(), 'data')
-    const dbPath = join(dataDir, 'practice.db')
+    const dbPath = join(getDataDir(), 'practice.db')
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
     const backupPath = join(backupSubdir, `practice-${timestamp}.db`)
     await copyFile(dbPath, backupPath)
@@ -187,13 +178,10 @@ blockquote{border-left:3px solid #ccc;margin:0.5em 0;padding:0.2em 1em;color:#66
   })
 
   ipcMain.handle('db:import', async (_e, backupPath: string) => {
-    const { copyFile, access } = await import('fs/promises')
-    await access(backupPath) // throws if not exists
+    const { copyFile } = await import('fs/promises')
+    await assertExistingFile(backupPath)
 
-    const dataDir = app.isPackaged
-      ? join(app.getPath('userData'), 'data')
-      : join(app.getAppPath(), 'data')
-    const dbPath = join(dataDir, 'practice.db')
+    const dbPath = join(getDataDir(), 'practice.db')
 
     // Close current db, copy backup, reopen
     const { closeDatabase, initDatabase } = await import('../database/index')

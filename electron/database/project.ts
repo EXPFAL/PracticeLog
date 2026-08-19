@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3'
+import { updateRow } from './util'
 
 export interface ProjectArchiveRow {
   id: number
@@ -45,16 +46,7 @@ export async function updateProjectArchive(
   id: number,
   data: Partial<Omit<ProjectArchiveRow, 'id' | 'created_at'>>
 ): Promise<void> {
-  const fields: string[] = []
-  const values: unknown[] = []
-  for (const [key, value] of Object.entries(data)) {
-    if (!ALLOWED_PROJECT_FIELDS.has(key)) continue
-    fields.push(`${key} = ?`)
-    values.push(value)
-  }
-  if (fields.length === 0) return
-  values.push(id)
-  db.prepare(`UPDATE project_archive SET ${fields.join(', ')} WHERE id = ?`).run(...values)
+  updateRow(db, 'project_archive', id, data, ALLOWED_PROJECT_FIELDS)
 }
 
 export async function deleteProjectArchive(db: Database.Database, id: number): Promise<void> {

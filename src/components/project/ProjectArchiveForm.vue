@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { NCard, NButton, NSpace, NEmpty, NSpin, NDrawer, NDrawerContent, NForm, NFormItem, NInput, useMessage } from 'naive-ui'
 import { useProjectStore } from '../../stores/project'
 import AiGenerateButton from '../common/AiGenerateButton.vue'
 import FolderPicker from './FolderPicker.vue'
 import ProjectCard from './ProjectCard.vue'
+import type { ProjectArchive } from '../../types'
 
 const props = defineProps<{ practiceId: number }>()
 const projectStore = useProjectStore()
@@ -12,6 +13,8 @@ const message = useMessage()
 const projectPath = ref('')
 const generating = ref(false)
 const showCreateDrawer = ref(false)
+const editingId = ref<number | null>(null)
+const drawerTitle = computed(() => editingId.value ? '编辑项目复盘' : '手动创建项目复盘')
 
 const createForm = ref({
   name: '',
@@ -44,14 +47,53 @@ async function handleGenerate() {
   }
 }
 
-async function handleManualCreate() {
+function resetForm() {
+  createForm.value = { name: '', local_path: '', tech_stack: '', role: '', summary: '', real_involvement: '', problems_solved: '', lessons: '', unknowns: '', interview_script: '' }
+}
+
+function fillForm(proj: ProjectArchive) {
+  createForm.value = {
+    name: proj.name,
+    local_path: proj.local_path ?? '',
+    tech_stack: proj.tech_stack ?? '',
+    role: proj.role ?? '',
+    summary: proj.summary ?? '',
+    real_involvement: proj.real_involvement ?? '',
+    problems_solved: proj.problems_solved ?? '',
+    lessons: proj.lessons ?? '',
+    unknowns: proj.unknowns ?? '',
+    interview_script: proj.interview_script ?? ''
+  }
+}
+
+function openCreate() {
+  editingId.value = null
+  resetForm()
+  showCreateDrawer.value = true
+}
+
+function openEdit(proj: ProjectArchive) {
+  editingId.value = proj.id
+  fillForm(proj)
+  showCreateDrawer.value = true
+}
+
+function closeDrawer() {
+  showCreateDrawer.value = false
+  editingId.value = null
+}
+
+function onDrawerShow(show: boolean) {
+  if (!show) editingId.value = null
+}
+
+async function handleSave() {
   if (!createForm.value.name.trim()) {
     message.warning('请输入项目名称')
     return
   }
-  await window.api.projectCreate({
-    practice_id: props.practiceId,
-    name: createForm.value.name,
+  const data = {
+    name: createForm.value.name.trim(),
     local_path: createForm.value.local_path || null,
     tech_stack: createForm.value.tech_stack || null,
     role: createForm.value.role || null,
@@ -62,21 +104,21 @@ async function handleManualCreate() {
     unknowns: createForm.value.unknowns || null,
     interview_script: createForm.value.interview_script || null,
     ai_generated: 0
-  })
-  await projectStore.fetch(props.practiceId)
-  showCreateDrawer.value = false
-  createForm.value = { name: '', local_path: '', tech_stack: '', role: '', summary: '', real_involvement: '', problems_solved: '', lessons: '', unknowns: '', interview_script: '' }
-  message.success('创建成功')
+  }
+  if (editingId.value) {
+    await projectStore.update(editingId.value, data)
+    message.success('已更新')
+  } else {
+    await window.api.projectCreate({ practice_id: props.practiceId, ...data })
+    await projectStore.fetch(props.practiceId)
+    message.success('创建成功')
+  }
+  closeDrawer()
 }
 
 async function handleDelete(id: number) {
   await projectStore.remove(id, props.practiceId)
   message.success('已删除')
-}
-
-async function handleUpdate(id: number, data: Record<string, unknown>) {
-  await projectStore.update(id, data)
-  message.success('已更新')
 }
 </script>
 
@@ -87,7 +129,7 @@ async function handleUpdate(id: number, data: Record<string, unknown>) {
         <FolderPicker v-model="projectPath" />
         <NSpace>
           <AiGenerateButton label="AI 生成复盘草稿" :loading="generating" @click="handleGenerate" />
-          <NButton @click="showCreateDrawer = true">手动创建</NButton>
+          <NButton @click="openCreate">手动创建</NButton>
         </NSpace>
       </NSpace>
     </NCard>
@@ -99,12 +141,12 @@ async function handleUpdate(id: number, data: Record<string, unknown>) {
         v-for="proj in projectStore.projects"
         :key="proj.id"
         :project="proj"
+        @edit="openEdit"
         @delete="handleDelete"
-        @update="handleUpdate"
       />
     </NSpin>
 
-    <NDrawer v-model:show="showCreateDrawer" :width="450" placement="right">
+    <NDrawer v-model:show="showCreateDrawer" :title="drawerTitle" :width="450" placement="right" @update:show="onDrawerShow">
       <NDrawerContent title="手动创建项目复盘">
         <NForm label-placement="top">
           <NFormItem label="项目名称" required>
@@ -140,8 +182,8 @@ async function handleUpdate(id: number, data: Record<string, unknown>) {
         </NForm>
         <template #footer>
           <NSpace>
-            <NButton @click="showCreateDrawer = false">取消</NButton>
-            <NButton type="primary" @click="handleManualCreate">创建</NButton>
+            <NButton @click="closeDrawer">取消</NButton>
+            <NButton type="primary" @click="handleSave">{{ editingId ? '保存' : '创建' }}</NButton>
           </NSpace>
         </template>
       </NDrawerContent>

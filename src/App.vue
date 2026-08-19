@@ -45,7 +45,10 @@ function handleKeydown(e: KeyboardEvent) {
 }
 
 onMounted(() => window.addEventListener('keydown', handleKeydown))
-onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeydown)
+  if (debounceTimer) clearTimeout(debounceTimer)
+})
 
 const error = ref<Error | null>(null)
 onErrorCaptured((err) => {

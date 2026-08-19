@@ -54,17 +54,13 @@ contextBridge.exposeInMainWorld('api', {
 
   // Search
   searchQuery: (query: string, practiceId?: number, entityType?: string) => ipcRenderer.invoke('search:query', query, practiceId, entityType),
-  searchRebuild: () => ipcRenderer.invoke('search:rebuild'),
 
   // AI Config
   aiConfigGet: () => ipcRenderer.invoke('ai:config:get'),
   aiConfigSet: (key: string) => ipcRenderer.invoke('ai:config:set', key),
 
   // Auto Update
-  updateCheck: () => ipcRenderer.invoke('update:check'),
   updateDownload: () => ipcRenderer.invoke('update:download'),
-  updateInstall: () => ipcRenderer.invoke('update:install'),
-  updateStatus: () => ipcRenderer.invoke('update:status'),
   onUpdateAvailable: (callback: (info: unknown) => void) => {
     ipcRenderer.on('update:available', (_e, info) => callback(info))
   },

@@ -1,8 +1,5 @@
 import { autoUpdater } from 'electron-updater'
-import { BrowserWindow, ipcMain } from 'electron'
-
-let updateAvailable = false
-let updateInfo: { version: string; releaseNotes?: string } | null = null
+import { BrowserWindow, ipcMain, app } from 'electron'
 
 export function setupAutoUpdater(): void {
   // Don't auto-download
@@ -10,16 +7,11 @@ export function setupAutoUpdater(): void {
   autoUpdater.autoInstallOnAppQuit = true
 
   autoUpdater.on('update-available', (info) => {
-    updateAvailable = true
-    updateInfo = { version: info.version, releaseNotes: info.releaseNotes as string | undefined }
+    const updateInfo = { version: info.version, releaseNotes: info.releaseNotes as string | undefined }
     // Notify all windows
     BrowserWindow.getAllWindows().forEach(win => {
       win.webContents.send('update:available', updateInfo)
     })
-  })
-
-  autoUpdater.on('update-not-available', () => {
-    updateAvailable = false
   })
 
   autoUpdater.on('download-progress', (progress) => {
@@ -42,29 +34,24 @@ export function setupAutoUpdater(): void {
     console.error('Auto-updater error:', err.message)
   })
 
-  // Register IPC handlers
-  ipcMain.handle('update:check', async () => {
-    try {
-      const result = await autoUpdater.checkForUpdates()
-      return {
-        available: !!result?.updateInfo,
-        version: result?.updateInfo?.version ?? null
-      }
-    } catch {
-      return { available: false, version: null }
-    }
-  })
+  // Check for updates only in packaged builds (dev has no publish source)
+  if (app.isPackaged) {
+    autoUpdater.checkForUpdates().catch((err) => {
+      console.error('Failed to check for updates:', err)
+    })
+  }
 
+  // Register IPC handlers
   ipcMain.handle('update:download', async () => {
-    await autoUpdater.downloadUpdate()
+    try {
+      await autoUpdater.downloadUpdate()
+    } catch (err) {
+      console.error('Failed to download update:', err)
+      throw err
+    }
   })
 
   ipcMain.handle('update:install', () => {
     autoUpdater.quitAndInstall()
   })
-
-  ipcMain.handle('update:status', () => ({
-    available: updateAvailable,
-    info: updateInfo
-  }))
 }

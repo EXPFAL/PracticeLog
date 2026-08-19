@@ -1,4 +1,4 @@
-import { app, BrowserWindow, session } from 'electron'
+import { app, BrowserWindow, session, dialog } from 'electron'
 import { join } from 'path'
 import { initDatabase, closeDatabase } from './database/index'
 import { registerPracticeHandlers } from './handlers/practice'
@@ -59,6 +59,10 @@ app.whenReady().then(() => {
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+}).catch((err) => {
+  console.error('Failed to initialize app:', err)
+  dialog.showErrorBox('初始化失败', String(err))
+  app.quit()
 })
 
 app.on('window-all-closed', () => {

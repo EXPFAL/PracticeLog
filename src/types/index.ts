@@ -122,15 +122,12 @@ export interface ElectronAPI {
   dbImport: (backupPath: string) => Promise<void>
   dbSelectBackup: () => Promise<string | null>
   searchQuery: (query: string, practiceId?: number, entityType?: string) => Promise<SearchResult[]>
-  searchRebuild: () => Promise<void>
 
   aiConfigGet: () => Promise<{ configured: boolean }>
   aiConfigSet: (key: string) => Promise<{ configured: boolean }>
 
-  updateCheck: () => Promise<{ available: boolean; version: string | null }>
   updateDownload: () => Promise<void>
   updateInstall: () => void
-  updateStatus: () => Promise<{ available: boolean; info: { version: string; releaseNotes?: string } | null }>
   onUpdateAvailable: (callback: (info: { version: string }) => void) => void
   onUpdateProgress: (callback: (progress: { percent: number }) => void) => void
   onUpdateDownloaded: (callback: () => void) => void

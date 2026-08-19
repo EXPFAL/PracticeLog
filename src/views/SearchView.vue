@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { NCard, NList, NListItem, NTag, NEmpty, NSpace, NSelect } from 'naive-ui'
+import { NList, NListItem, NTag, NEmpty, NSpace, NSelect } from 'naive-ui'
 import type { SearchResult } from '../types'
+import { renderSnippet } from '../utils/snippet'
+
+type TagType = 'default' | 'primary' | 'info' | 'success' | 'warning' | 'error'
 
 const route = useRoute()
 const router = useRouter()
@@ -11,7 +14,7 @@ const loading = ref(false)
 const query = ref((route.query.q as string) || '')
 const entityType = ref<string>('')
 
-const typeLabels: Record<string, { label: string; color: string }> = {
+const typeLabels: Record<string, { label: string; color: TagType }> = {
   practice: { label: '实践', color: 'info' },
   knowledge: { label: '知识点', color: 'success' },
   log: { label: '日志', color: 'warning' },
@@ -25,10 +28,6 @@ const typeOptions = [
   { label: '日志', value: 'log' },
   { label: '项目', value: 'project' }
 ]
-
-function sanitizeSnippet(html: string): string {
-  return html.replace(/<(?!\/?b[ >])[^>]*>/g, '')
-}
 
 async function doSearch() {
   if (!query.value.trim()) { results.value = []; return }
@@ -79,12 +78,12 @@ function goToResult(item: SearchResult) {
         @keydown.enter="goToResult(item)"
       >
         <NSpace align="center" :size="8">
-          <NTag :type="(typeLabels[item.entity_type]?.color as any) || 'default'" size="small">
+          <NTag :type="typeLabels[item.entity_type]?.color ?? 'default'" size="small">
             {{ typeLabels[item.entity_type]?.label || item.entity_type }}
           </NTag>
           <strong>{{ item.title }}</strong>
         </NSpace>
-        <div v-if="item.snippet" style="font-size: 13px; color: var(--n-text-color-2); margin-top: 4px;" v-html="sanitizeSnippet(item.snippet)" />
+        <div v-if="item.snippet" style="font-size: 13px; color: var(--n-text-color-2); margin-top: 4px;" v-html="renderSnippet(item.snippet)" />
       </NListItem>
     </NList>
   </div>

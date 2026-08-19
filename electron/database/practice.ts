@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3'
+import { updateRow } from './util'
 
 export interface PracticeRow {
   id: number
@@ -41,16 +42,7 @@ export async function updatePractice(
   id: number,
   data: Partial<Omit<PracticeRow, 'id' | 'created_at'>>
 ): Promise<void> {
-  const fields: string[] = []
-  const values: unknown[] = []
-  for (const [key, value] of Object.entries(data)) {
-    if (!ALLOWED_FIELDS.has(key)) continue
-    fields.push(`${key} = ?`)
-    values.push(value)
-  }
-  if (fields.length === 0) return
-  values.push(id)
-  db.prepare(`UPDATE practice SET ${fields.join(', ')} WHERE id = ?`).run(...values)
+  updateRow(db, 'practice', id, data, ALLOWED_FIELDS)
 }
 
 export async function deletePractice(db: Database.Database, id: number): Promise<void> {

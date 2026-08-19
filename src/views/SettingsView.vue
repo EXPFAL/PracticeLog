@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { NCard, NForm, NFormItem, NInput, NButton, NSpace, NDivider, NTag, NSwitch, useMessage } from 'naive-ui'
+import { NCard, NForm, NFormItem, NInput, NButton, NSpace, NTag, useMessage } from 'naive-ui'
 
 const message = useMessage()
 const apiKey = ref('')
