@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { NCard, NGrid, NGi, NStatistic, NList, NListItem, NTag, NButton, NEmpty, NSpin, NSpace, useMessage } from 'naive-ui'
+import { NCard, NGrid, NGi, NStatistic, NList, NListItem, NTag, NButton, NEmpty, NSkeleton, NSpace, useMessage } from 'naive-ui'
 import { useRouter } from 'vue-router'
 import { usePracticeStore } from '../stores/practice'
 import ProgressPie from '../components/common/ProgressPie.vue'
@@ -16,8 +16,6 @@ const backingUp = ref(false)
 
 onMounted(async () => {
   await practiceStore.fetchAll()
-
-  // Fetch knowledge stats across all practices
   const allLogs: DailyLog[] = []
   const allItems: KnowledgeItem[] = []
   for (const p of practiceStore.practices) {
@@ -38,7 +36,7 @@ const mastered = computed(() => allKnowledge.value.filter(i => i.status === '已
 const learning = computed(() => allKnowledge.value.filter(i => i.status === '学习中').length)
 const unlearned = computed(() => allKnowledge.value.filter(i => i.status === '未学').length)
 
-async function openPractice(id: number) {
+function openPractice(id: number) {
   router.push(`/practice/${id}`)
 }
 
@@ -53,16 +51,43 @@ async function handleBackup() {
     backingUp.value = false
   }
 }
+
+async function handleImport() {
+  const path = await window.api.dbSelectBackup()
+  if (!path) return
+  try {
+    await window.api.dbImport(path)
+    message.success('导入成功，正在刷新...')
+    window.location.reload()
+  } catch (e: unknown) {
+    message.error('导入失败: ' + String(e))
+  }
+}
 </script>
 
 <template>
   <div>
     <NSpace justify="space-between" align="center" style="margin-bottom: 24px">
-      <h2>PracticeLog — 实践学习助手</h2>
-      <NButton :loading="backingUp" @click="handleBackup">备份数据库</NButton>
+      <h2>PracticeLog</h2>
+      <NSpace>
+        <NButton size="small" @click="handleImport">导入备份</NButton>
+        <NButton size="small" :loading="backingUp" @click="handleBackup">备份数据库</NButton>
+      </NSpace>
     </NSpace>
 
-    <NSpin :show="loading">
+    <!-- Skeleton loading -->
+    <template v-if="loading">
+      <NGrid :cols="2" :x-gap="16" :y-gap="16" style="margin-bottom: 24px">
+        <NGi><NCard><NSkeleton text :repeat="2" /></NCard></NGi>
+        <NGi><NCard><NSkeleton text :repeat="3" /></NCard></NGi>
+      </NGrid>
+      <NGrid :cols="2" :x-gap="16" :y-gap="16">
+        <NGi><NCard><NSkeleton text :repeat="4" /></NCard></NGi>
+        <NGi><NCard><NSkeleton text :repeat="4" /></NCard></NGi>
+      </NGrid>
+    </template>
+
+    <template v-else>
       <NGrid :cols="2" :x-gap="16" :y-gap="16" style="margin-bottom: 24px">
         <NGi>
           <NCard>
@@ -87,6 +112,9 @@ async function handleBackup() {
                 <div v-if="log.what_done" style="font-size: 13px; margin-top: 4px">{{ log.what_done }}</div>
               </NListItem>
             </NList>
+          </NCard>
+          <NCard v-else title="最近日志">
+            <NEmpty description="还没有日志记录" />
           </NCard>
         </NGi>
         <NGi>
@@ -117,6 +145,6 @@ async function handleBackup() {
           </NCard>
         </NGi>
       </NGrid>
-    </NSpin>
+    </template>
   </div>
 </template>

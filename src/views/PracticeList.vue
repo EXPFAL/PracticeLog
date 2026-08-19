@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { NButton, NCard, NGrid, NGi, NEmpty, NTag, NSpace, NSpin, NPopconfirm, NDrawer, NDrawerContent, NForm, NFormItem, NInput, NDatePicker, useMessage } from 'naive-ui'
+import { onMounted, ref, computed } from 'vue'
+import { NButton, NCard, NGrid, NGi, NEmpty, NTag, NSpace, NSkeleton, NPopconfirm, NDrawer, NDrawerContent, NForm, NFormItem, NInput, NDatePicker, NSelect, useMessage } from 'naive-ui'
 import { useRouter } from 'vue-router'
 import { usePracticeStore } from '../stores/practice'
 
@@ -9,6 +9,7 @@ const practiceStore = usePracticeStore()
 const message = useMessage()
 const showCreate = ref(false)
 const loading = ref(true)
+const filterTag = ref<string | null>(null)
 
 const form = ref({
   title: '',
@@ -25,9 +26,37 @@ onMounted(async () => {
   loading.value = false
 })
 
+const allTags = computed(() => {
+  const tags = new Set<string>()
+  for (const p of practiceStore.practices) {
+    if (p.direction_tags) {
+      try {
+        const parsed = JSON.parse(p.direction_tags) as string[]
+        parsed.forEach(t => tags.add(t))
+      } catch { /* ignore */ }
+    }
+  }
+  return [...tags].map(t => ({ label: t, value: t }))
+})
+
+const filteredPractices = computed(() => {
+  if (!filterTag.value) return practiceStore.practices
+  return practiceStore.practices.filter(p => {
+    if (!p.direction_tags) return false
+    try {
+      const tags = JSON.parse(p.direction_tags) as string[]
+      return tags.includes(filterTag.value!)
+    } catch { return false }
+  })
+})
+
 function formatDate(ts: number | null): string | null {
-  if (!ts) return null
-  return new Date(ts).toISOString().slice(0, 10)
+  return ts ? new Date(ts).toISOString().slice(0, 10) : null
+}
+
+function parseTags(tags: string | null): string[] {
+  if (!tags) return []
+  try { return JSON.parse(tags) as string[] } catch { return [] }
 }
 
 async function handleCreate() {
@@ -67,13 +96,29 @@ function openDetail(id: number) {
   <div>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px">
       <h2>实践列表</h2>
-      <NButton type="primary" @click="showCreate = true">新建实践</NButton>
+      <NSpace>
+        <NSelect
+          v-if="allTags.length > 0"
+          v-model:value="filterTag"
+          :options="allTags"
+          placeholder="按标签筛选"
+          clearable
+          style="width: 160px"
+        />
+        <NButton type="primary" @click="showCreate = true">新建实践</NButton>
+      </NSpace>
     </div>
 
-    <NSpin :show="loading">
-      <NEmpty v-if="!loading && practiceStore.practices.length === 0" description="还没有实践记录，点击右上角新建" />
+    <template v-if="loading">
+      <NGrid :cols="2" :x-gap="16" :y-gap="16">
+        <NGi v-for="i in 4" :key="i"><NCard><NSkeleton text :repeat="3" /></NCard></NGi>
+      </NGrid>
+    </template>
+
+    <template v-else>
+      <NEmpty v-if="filteredPractices.length === 0" :description="filterTag ? `没有「${filterTag}」相关的实践` : '还没有实践记录，点击右上角新建'" />
       <NGrid v-else :cols="2" :x-gap="16" :y-gap="16">
-        <NGi v-for="p in practiceStore.practices" :key="p.id">
+        <NGi v-for="p in filteredPractices" :key="p.id">
           <NCard hoverable style="cursor: pointer" @click="openDetail(p.id)">
             <template #header>
               <span @click.stop>{{ p.title }}</span>
@@ -87,11 +132,18 @@ function openDetail(id: number) {
               </NPopconfirm>
             </template>
             <NSpace vertical :size="8">
-              <div v-if="p.location" style="font-size: 13px; color: #666">📍 {{ p.location }}</div>
-              <div v-if="p.advisor" style="font-size: 13px; color: #666">👨‍🏫 {{ p.advisor }}</div>
-              <div v-if="p.start_date" style="font-size: 13px; color: #666">📅 {{ p.start_date }} — {{ p.end_date || '进行中' }}</div>
+              <div v-if="p.location" style="font-size: 13px; color: #666">{{ p.location }}</div>
+              <div v-if="p.advisor" style="font-size: 13px; color: #666">{{ p.advisor }}</div>
+              <div v-if="p.start_date" style="font-size: 13px; color: #666">{{ p.start_date }} — {{ p.end_date || '进行中' }}</div>
               <NSpace v-if="p.direction_tags" :size="4">
-                <NTag v-for="tag in (() => { try { return JSON.parse(p.direction_tags!) } catch { return [] } })()" :key="tag" size="small">
+                <NTag
+                  v-for="tag in parseTags(p.direction_tags)"
+                  :key="tag"
+                  size="small"
+                  :type="filterTag === tag ? 'success' : 'default'"
+                  style="cursor: pointer"
+                  @click.stop="filterTag = filterTag === tag ? null : tag"
+                >
                   {{ tag }}
                 </NTag>
               </NSpace>
@@ -99,7 +151,7 @@ function openDetail(id: number) {
           </NCard>
         </NGi>
       </NGrid>
-    </NSpin>
+    </template>
 
     <NDrawer v-model:show="showCreate" :width="400" placement="right">
       <NDrawerContent title="新建实践">

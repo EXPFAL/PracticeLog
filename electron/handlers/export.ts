@@ -149,6 +149,15 @@ blockquote{border-left:3px solid #ccc;margin:0.5em 0;padding:0.2em 1em;color:#66
     return result.filePaths[0]
   })
 
+  ipcMain.handle('dialog:openBackup', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters: [{ name: '数据库备份', extensions: ['db'] }]
+    })
+    if (result.canceled || result.filePaths.length === 0) return null
+    return result.filePaths[0]
+  })
+
   ipcMain.handle('dialog:openFile', async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openFile', 'multiSelections'],
@@ -175,5 +184,21 @@ blockquote{border-left:3px solid #ccc;margin:0.5em 0;padding:0.2em 1em;color:#66
     const backupPath = join(backupSubdir, `practice-${timestamp}.db`)
     await copyFile(dbPath, backupPath)
     return backupPath
+  })
+
+  ipcMain.handle('db:import', async (_e, backupPath: string) => {
+    const { copyFile, access } = await import('fs/promises')
+    await access(backupPath) // throws if not exists
+
+    const dataDir = app.isPackaged
+      ? join(app.getPath('userData'), 'data')
+      : join(app.getAppPath(), 'data')
+    const dbPath = join(dataDir, 'practice.db')
+
+    // Close current db, copy backup, reopen
+    const { closeDatabase, initDatabase } = await import('../database/index')
+    closeDatabase()
+    await copyFile(backupPath, dbPath)
+    initDatabase()
   })
 }

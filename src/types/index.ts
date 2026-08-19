@@ -62,6 +62,14 @@ export interface ProjectArchive {
   created_at: string
 }
 
+export interface SearchResult {
+  entity_type: 'practice' | 'knowledge' | 'log' | 'project'
+  entity_id: number
+  practice_id: number
+  title: string
+  snippet: string
+}
+
 export interface ProjectScanResult {
   name: string
   path: string
@@ -106,6 +114,10 @@ export interface ElectronAPI {
   openFolder: () => Promise<string | null>
   openFile: () => Promise<string[] | null>
   dbBackup: () => Promise<string>
+  dbImport: (backupPath: string) => Promise<void>
+  dbSelectBackup: () => Promise<string | null>
+  searchQuery: (query: string, practiceId?: number) => Promise<SearchResult[]>
+  searchRebuild: () => Promise<void>
 
   aiConfigGet: () => Promise<{ configured: boolean }>
   aiConfigSet: (key: string) => Promise<{ configured: boolean }>

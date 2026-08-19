@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, session } from 'electron'
 import { join } from 'path'
 import { initDatabase, closeDatabase } from './database/index'
 import { registerPracticeHandlers } from './handlers/practice'
@@ -7,6 +7,7 @@ import { registerKnowledgeHandlers } from './handlers/knowledge'
 import { registerLogHandlers } from './handlers/log'
 import { registerProjectHandlers } from './handlers/project'
 import { registerExportHandlers } from './handlers/export'
+import { registerSearchHandlers } from './handlers/search'
 import { registerAiConfigHandlers } from './handlers/ai-config'
 import { setupAutoUpdater } from './ai/updater'
 
@@ -29,6 +30,18 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  // CSP for production
+  if (!process.env.ELECTRON_RENDERER_URL) {
+    session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+          'Content-Security-Policy': ["default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;"]
+        }
+      })
+    })
+  }
+
   const db = initDatabase()
 
   registerPracticeHandlers(db)
@@ -37,6 +50,7 @@ app.whenReady().then(() => {
   registerLogHandlers(db)
   registerProjectHandlers(db)
   registerExportHandlers(db)
+  registerSearchHandlers(db)
   registerAiConfigHandlers()
 
   createWindow()

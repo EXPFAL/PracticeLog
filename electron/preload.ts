@@ -44,6 +44,12 @@ contextBridge.exposeInMainWorld('api', {
 
   // Database
   dbBackup: () => ipcRenderer.invoke('db:backup'),
+  dbImport: (backupPath: string) => ipcRenderer.invoke('db:import', backupPath),
+  dbSelectBackup: () => ipcRenderer.invoke('dialog:openBackup'),
+
+  // Search
+  searchQuery: (query: string, practiceId?: number) => ipcRenderer.invoke('search:query', query, practiceId),
+  searchRebuild: () => ipcRenderer.invoke('search:rebuild'),
 
   // AI Config
   aiConfigGet: () => ipcRenderer.invoke('ai:config:get'),

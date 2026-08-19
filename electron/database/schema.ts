@@ -62,4 +62,18 @@ CREATE TABLE IF NOT EXISTS project_archive (
   ai_generated INTEGER DEFAULT 0,
   created_at TEXT DEFAULT (datetime('now'))
 );
+
+-- Indexes for foreign keys and common queries
+CREATE INDEX IF NOT EXISTS idx_material_practice ON material(practice_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_practice ON knowledge_item(practice_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_status ON knowledge_item(practice_id, status);
+CREATE INDEX IF NOT EXISTS idx_log_practice ON daily_log(practice_id);
+CREATE INDEX IF NOT EXISTS idx_log_date ON daily_log(practice_id, date);
+CREATE INDEX IF NOT EXISTS idx_project_practice ON project_archive(practice_id);
+
+-- Full-text search virtual table
+CREATE VIRTUAL TABLE IF NOT EXISTS fts_search USING fts5(
+  entity_type, entity_id, practice_id, title, body,
+  content='', tokenize='unicode61'
+);
 `
