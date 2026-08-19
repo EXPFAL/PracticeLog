@@ -99,6 +99,7 @@ export interface ElectronAPI {
   logList: (practiceId: number) => Promise<DailyLog[]>
   logGet: (id: number) => Promise<DailyLog | undefined>
   logCreate: (data: { practice_id: number; date: string; what_done?: string; problems?: string; solutions?: string; reflection?: string }) => Promise<number>
+  logDelete: (id: number) => Promise<void>
 
   projectList: (practiceId: number) => Promise<ProjectArchive[]>
   projectCreate: (data: Omit<ProjectArchive, 'id' | 'created_at'>) => Promise<number>

@@ -47,3 +47,7 @@ export async function createOrUpdateDailyLog(
   ).run(data.practice_id, data.date, data.what_done ?? null, data.problems ?? null, data.solutions ?? null, data.reflection ?? null)
   return result.lastInsertRowid as number
 }
+
+export async function deleteDailyLog(db: Database.Database, id: number): Promise<void> {
+  db.prepare('DELETE FROM daily_log WHERE id = ?').run(id)
+}

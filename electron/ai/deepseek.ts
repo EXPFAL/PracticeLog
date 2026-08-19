@@ -55,8 +55,12 @@ export async function generateKnowledgeList(materials: string[]): Promise<Genera
   })
 
   const content = response.choices[0]?.message?.content ?? '{}'
-  const parsed = JSON.parse(content) as { items?: GeneratedKnowledgeItem[] }
-  return parsed.items ?? []
+  try {
+    const parsed = JSON.parse(content) as { items?: GeneratedKnowledgeItem[] }
+    return parsed.items ?? []
+  } catch {
+    throw new Error('AI 返回的内容格式异常，请重试。原始内容: ' + content.slice(0, 200))
+  }
 }
 
 export interface GeneratedProjectArchive {
@@ -109,5 +113,9 @@ export async function generateProjectArchive(projectInfo: ProjectScanResult): Pr
   })
 
   const content = response.choices[0]?.message?.content ?? '{}'
-  return JSON.parse(content) as GeneratedProjectArchive
+  try {
+    return JSON.parse(content) as GeneratedProjectArchive
+  } catch {
+    throw new Error('AI 返回的内容格式异常，请重试。原始内容: ' + content.slice(0, 200))
+  }
 }

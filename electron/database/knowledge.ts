@@ -35,6 +35,8 @@ export async function createKnowledgeItem(
   return result.lastInsertRowid as number
 }
 
+const ALLOWED_KNOWLEDGE_FIELDS = new Set(['concept', 'one_line_explain', 'importance', 'status', 'resource', 'note', 'order_index', 'ai_generated'])
+
 export async function updateKnowledgeItem(
   db: Database.Database,
   id: number,
@@ -43,6 +45,7 @@ export async function updateKnowledgeItem(
   const fields: string[] = []
   const values: unknown[] = []
   for (const [key, value] of Object.entries(data)) {
+    if (!ALLOWED_KNOWLEDGE_FIELDS.has(key)) continue
     fields.push(`${key} = ?`)
     values.push(value)
   }

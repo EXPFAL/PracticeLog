@@ -21,5 +21,10 @@ export const useLogStore = defineStore('log', () => {
     return id
   }
 
-  return { logs, loading, fetch, create }
+  async function remove(id: number) {
+    await window.api.logDelete(id)
+    logs.value = logs.value.filter(l => l.id !== id)
+  }
+
+  return { logs, loading, fetch, create, remove }
 })

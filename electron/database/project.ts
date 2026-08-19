@@ -38,6 +38,8 @@ export async function createProjectArchive(
   return result.lastInsertRowid as number
 }
 
+const ALLOWED_PROJECT_FIELDS = new Set(['name', 'local_path', 'tech_stack', 'role', 'summary', 'real_involvement', 'problems_solved', 'lessons', 'unknowns', 'interview_script', 'ai_generated'])
+
 export async function updateProjectArchive(
   db: Database.Database,
   id: number,
@@ -46,6 +48,7 @@ export async function updateProjectArchive(
   const fields: string[] = []
   const values: unknown[] = []
   for (const [key, value] of Object.entries(data)) {
+    if (!ALLOWED_PROJECT_FIELDS.has(key)) continue
     fields.push(`${key} = ?`)
     values.push(value)
   }

@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS practice (
   advisor TEXT,
   direction_tags TEXT,
   notes TEXT,
-  created_at TEXT DEFAULT (datetime('now'))
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
 );
 
 CREATE TABLE IF NOT EXISTS material (
@@ -43,7 +44,8 @@ CREATE TABLE IF NOT EXISTS daily_log (
   problems TEXT,
   solutions TEXT,
   reflection TEXT,
-  created_at TEXT DEFAULT (datetime('now'))
+  created_at TEXT DEFAULT (datetime('now')),
+  UNIQUE(practice_id, date)
 );
 
 CREATE TABLE IF NOT EXISTS project_archive (

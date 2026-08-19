@@ -1,6 +1,5 @@
 import { ipcMain } from 'electron'
 import type Database from 'better-sqlite3'
-import { rebuildFts } from '../database/index'
 
 export interface SearchResult {
   entity_type: string
@@ -13,9 +12,6 @@ export interface SearchResult {
 export function registerSearchHandlers(db: Database.Database): void {
   ipcMain.handle('search:query', (_e, query: string, practiceId?: number): SearchResult[] => {
     if (!query.trim()) return []
-
-    // Rebuild FTS to ensure freshness
-    rebuildFts()
 
     const ftsQuery = query.trim().split(/\s+/).map(w => `"${w}"`).join(' OR ')
 
@@ -41,8 +37,8 @@ export function registerSearchHandlers(db: Database.Database): void {
     }
   })
 
-  // Rebuild FTS after data changes
   ipcMain.handle('search:rebuild', () => {
+    const { rebuildFts } = require('../database/index')
     rebuildFts()
   })
 }

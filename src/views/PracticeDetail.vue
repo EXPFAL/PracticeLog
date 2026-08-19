@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, provide, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { NTabs, NTabPane, NPageHeader, NButton, NSpace, NSkeleton, useMessage } from 'naive-ui'
+import { NTabs, NTabPane, NPageHeader, NButton, NSpace, NSkeleton, NResult } from 'naive-ui'
 import { usePracticeStore } from '../stores/practice'
 import PracticeForm from '../components/practice/PracticeForm.vue'
 import MaterialUpload from '../components/practice/MaterialUpload.vue'
@@ -13,8 +13,8 @@ import ProjectArchiveForm from '../components/project/ProjectArchiveForm.vue'
 const route = useRoute()
 const router = useRouter()
 const practiceStore = usePracticeStore()
-const message = useMessage()
 const loading = ref(true)
+const notFound = ref(false)
 const activeTab = ref('config')
 const selectedLogDate = ref<string | null>(null)
 
@@ -23,11 +23,13 @@ const practiceId = Number(route.params.id)
 provide('practiceId', practiceId)
 
 onMounted(async () => {
-  await practiceStore.getById(practiceId)
+  const practice = await practiceStore.getById(practiceId)
+  if (!practice) {
+    notFound.value = true
+  }
   loading.value = false
 })
 
-// Keyboard shortcuts
 function handleKeydown(e: KeyboardEvent) {
   if (e.ctrlKey || e.metaKey) {
     if (e.key === '1') { activeTab.value = 'config'; e.preventDefault() }
@@ -36,7 +38,8 @@ function handleKeydown(e: KeyboardEvent) {
     if (e.key === '4') { activeTab.value = 'project'; e.preventDefault() }
   }
 }
-window.addEventListener('keydown', handleKeydown)
+
+onMounted(() => window.addEventListener('keydown', handleKeydown))
 onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 </script>
 
@@ -44,7 +47,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
   <div>
     <NPageHeader @back="router.push('/practices')">
       <template #title>
-        {{ practiceStore.current?.title || '加载中...' }}
+        {{ practiceStore.current?.title || '实践详情' }}
       </template>
       <template #extra>
         <NSpace>
@@ -53,7 +56,13 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
       </template>
     </NPageHeader>
 
-    <template v-if="loading">
+    <NResult v-if="notFound" status="404" title="实践不存在" description="该实践记录可能已被删除。" style="margin-top: 48px;">
+      <template #footer>
+        <NButton type="primary" @click="router.push('/practices')">返回列表</NButton>
+      </template>
+    </NResult>
+
+    <template v-else-if="loading">
       <NSkeleton text :repeat="6" style="margin-top: 16px" />
     </template>
 

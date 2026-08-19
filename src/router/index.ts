@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 
 const router = createRouter({
   history: createWebHashHistory(),
+  scrollBehavior: () => ({ top: 0 }),
   routes: [
     {
       path: '/',
@@ -17,7 +18,13 @@ const router = createRouter({
       path: '/practice/:id',
       name: 'PracticeDetail',
       component: () => import('../views/PracticeDetail.vue'),
-      props: true
+      props: true,
+      beforeEnter: (to) => {
+        const id = Number(to.params.id)
+        if (isNaN(id) || id <= 0) {
+          return { name: 'NotFound' }
+        }
+      }
     },
     {
       path: '/export',
@@ -33,6 +40,16 @@ const router = createRouter({
       path: '/stats',
       name: 'Stats',
       component: () => import('../views/StatsView.vue')
+    },
+    {
+      path: '/settings',
+      name: 'Settings',
+      component: () => import('../views/SettingsView.vue')
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: () => import('../views/NotFound.vue')
     }
   ]
 })

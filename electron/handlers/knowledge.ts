@@ -6,12 +6,23 @@ import {
 } from '../database/knowledge'
 import { listMaterials } from '../database/material'
 import { generateKnowledgeList } from '../ai/deepseek'
+import { rebuildFts } from '../database/index'
 
 export function registerKnowledgeHandlers(db: Database.Database): void {
   ipcMain.handle('knowledge:list', (_e, practiceId: number) => listKnowledgeItems(db, practiceId))
-  ipcMain.handle('knowledge:create', (_e, data) => createKnowledgeItem(db, data))
-  ipcMain.handle('knowledge:update', (_e, id: number, data) => updateKnowledgeItem(db, id, data))
-  ipcMain.handle('knowledge:delete', (_e, id: number) => deleteKnowledgeItem(db, id))
+  ipcMain.handle('knowledge:create', async (_e, data) => {
+    const id = await createKnowledgeItem(db, data)
+    rebuildFts()
+    return id
+  })
+  ipcMain.handle('knowledge:update', async (_e, id: number, data) => {
+    await updateKnowledgeItem(db, id, data)
+    rebuildFts()
+  })
+  ipcMain.handle('knowledge:delete', async (_e, id: number) => {
+    await deleteKnowledgeItem(db, id)
+    rebuildFts()
+  })
 
   ipcMain.handle('knowledge:generate', async (_e, practiceId: number) => {
     const materials = await listMaterials(db, practiceId)
@@ -37,6 +48,7 @@ export function registerKnowledgeHandlers(db: Database.Database): void {
     }))
 
     batchCreateKnowledgeItems(db, items)
+    rebuildFts()
     return items.length
   })
 }

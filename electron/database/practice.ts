@@ -34,6 +34,8 @@ export async function createPractice(
   return result.lastInsertRowid as number
 }
 
+const ALLOWED_FIELDS = new Set(['title', 'start_date', 'end_date', 'location', 'advisor', 'direction_tags', 'notes'])
+
 export async function updatePractice(
   db: Database.Database,
   id: number,
@@ -42,6 +44,7 @@ export async function updatePractice(
   const fields: string[] = []
   const values: unknown[] = []
   for (const [key, value] of Object.entries(data)) {
+    if (!ALLOWED_FIELDS.has(key)) continue
     fields.push(`${key} = ?`)
     values.push(value)
   }

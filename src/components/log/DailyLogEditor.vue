@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { NCard, NDatePicker, NForm, NFormItem, NInput, NButton, NSpace, NList, NListItem, NTag, NSelect, useMessage } from 'naive-ui'
+import { NCard, NDatePicker, NForm, NFormItem, NInput, NButton, NSpace, NList, NListItem, NTag, NSelect, NPopconfirm, useMessage } from 'naive-ui'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { useLogStore } from '../../stores/log'
@@ -47,6 +47,7 @@ const templates = [
 
 const selectedTemplate = ref('blank')
 const useMarkdown = ref(true)
+const showAllLogs = ref(false)
 
 function applyTemplate(val: string) {
   const tpl = templates.find(t => t.value === val)
@@ -89,6 +90,11 @@ watch(() => props.externalDate, (newDate) => {
     selectedDate.value = parseDate(newDate)
   }
 })
+
+async function handleDeleteLog(id: number) {
+  await logStore.remove(id)
+  message.success('日志已删除')
+}
 
 async function handleSave() {
   if (!form.value.what_done.trim() && !form.value.problems.trim()) {
@@ -146,12 +152,23 @@ async function handleSave() {
     </NForm>
 
     <NList v-if="logStore.logs.length > 0" bordered style="margin-top: 16px">
-      <NListItem v-for="log in logStore.logs.slice(0, 10)" :key="log.id">
-        <NSpace justify="space-between">
+      <NListItem v-for="log in logStore.logs.slice(0, showAllLogs ? undefined : 10)" :key="log.id">
+        <NSpace justify="space-between" align="center">
           <NTag type="info" size="small" style="cursor: pointer" @click="selectedDate = parseDate(log.date)">{{ log.date }}</NTag>
+          <NPopconfirm @positive-click="handleDeleteLog(log.id)">
+            <template #trigger>
+              <NButton size="tiny" type="error" quaternary>删除</NButton>
+            </template>
+            确认删除 {{ log.date }} 的日志？
+          </NPopconfirm>
         </NSpace>
         <div v-if="log.what_done" style="margin-top: 4px; font-size: 13px">{{ log.what_done }}</div>
         <div v-if="log.problems" style="margin-top: 2px; font-size: 12px; color: #e88">❓ {{ log.problems }}</div>
+      </NListItem>
+      <NListItem v-if="logStore.logs.length > 10 && !showAllLogs">
+        <NButton quaternary size="small" @click="showAllLogs = true">
+          显示全部 {{ logStore.logs.length }} 条日志
+        </NButton>
       </NListItem>
     </NList>
   </NCard>

@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('api', {
   logList: (practiceId: number) => ipcRenderer.invoke('log:list', practiceId),
   logGet: (id: number) => ipcRenderer.invoke('log:get', id),
   logCreate: (data: unknown) => ipcRenderer.invoke('log:create', data),
+  logDelete: (id: number) => ipcRenderer.invoke('log:delete', id),
 
   // Project
   projectList: (practiceId: number) => ipcRenderer.invoke('project:list', practiceId),

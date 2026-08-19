@@ -40,7 +40,7 @@ defineEmits<{
       <div v-if="project.unknowns" style="font-size: 13px; color: #f5222d">
         <strong>还不懂的:</strong> {{ project.unknowns }}
       </div>
-      <div v-if="project.interview_script" style="font-size: 13px; background: #f6f6f6; padding: 8px; border-radius: 4px">
+      <div v-if="project.interview_script" style="font-size: 13px; background: var(--n-color, #f6f6f6); padding: 8px; border-radius: 4px; border: 1px solid var(--n-border-color, #eee)">
         <strong>面试话术:</strong><br>{{ project.interview_script }}
       </div>
     </NSpace>
