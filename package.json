@@ -1,6 +1,6 @@
 {
   "name": "practice-log",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "实践学习助手 — 实践前学习，实践中记录，实践后复盘",
   "main": "./out/main/index.js",
   "scripts": {
@@ -13,7 +13,8 @@
     "postinstall": "electron-rebuild -f -w better-sqlite3",
     "start": "electron-vite preview",
     "package": "electron-vite build && electron-builder build --config",
-    "package:win": "electron-vite build && electron-builder build --win --config"
+    "package:win": "electron-vite build && electron-builder build --win --config",
+    "release:win": "node scripts/release.mjs"
   },
   "dependencies": {
     "@vicons/antd": "^0.13.0",
@@ -61,6 +62,7 @@
     "electronDist": "node_modules/electron/dist",
     "win": {
       "icon": "build/icon.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
       "target": [
         {
           "target": "nsis",
