@@ -1,0 +1,35 @@
+{
+  "name": "practice-log",
+  "version": "1.0.0",
+  "description": "实践学习助手 — 实践前学习，实践中记录，实践后复盘",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:web": "vue-tsc --noEmit -p tsconfig.web.json",
+    "typecheck": "npm-run-all --serial typecheck:node typecheck:web",
+    "postinstall": "electron-rebuild -f -w better-sqlite3",
+    "start": "electron-vite preview"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "markdown-it": "^14.0.0",
+    "naive-ui": "^2.39.0",
+    "openai": "^4.0.0",
+    "pdf-parse": "^1.1.1",
+    "pinia": "^2.1.0",
+    "vue": "^3.4.0",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^3.6.0",
+    "@vitejs/plugin-vue": "^5.0.0",
+    "electron": "^33.0.0",
+    "electron-vite": "^2.3.0",
+    "npm-run-all2": "^7.0.0",
+    "typescript": "^5.5.0",
+    "vite": "^5.4.0",
+    "vue-tsc": "^2.0.0"
+  }
+}

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+out/
+*.db
+.env
+.electron-cache/
+.npm-cache/
+.tmp/
+exports/
+data/
+.DS_Store
+Thumbs.db
+*.log
