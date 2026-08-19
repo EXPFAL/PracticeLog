@@ -50,6 +50,28 @@ function buildProjectContext(projectInfo: ProjectScanResult): string {
   ].filter(Boolean).join('\n\n')
 }
 
+/** Parse `{ "items": [...] }` and drop malformed entries (e.g. models that return
+ *  items as plain strings) instead of letting `undefined` leak into DB binds. */
+function parseGeneratedItems(content: string): GeneratedKnowledgeItem[] {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(content)
+  } catch {
+    throw new Error('AI 返回的内容格式异常，请重试。原始内容: ' + content.slice(0, 200))
+  }
+  const raw = (parsed as { items?: unknown }).items
+  if (!Array.isArray(raw)) {
+    throw new Error('AI 返回的内容格式异常（缺少 items 数组），请重试。原始内容: ' + content.slice(0, 200))
+  }
+  const items = raw.filter((it): it is GeneratedKnowledgeItem =>
+    typeof it === 'object' && it !== null && typeof (it as GeneratedKnowledgeItem).concept === 'string'
+  )
+  if (items.length === 0) {
+    throw new Error('AI 返回的内容格式异常（无有效知识点），请重试。原始内容: ' + content.slice(0, 200))
+  }
+  return items
+}
+
 export async function generateKnowledgeList(materials: string[]): Promise<GeneratedKnowledgeItem[]> {
   const c = getClient()
   const combinedText = materials.join('\n\n---\n\n').slice(0, 12000)
@@ -72,13 +94,7 @@ export async function generateKnowledgeList(materials: string[]): Promise<Genera
     ]
   })
 
-  const content = response.choices[0]?.message?.content ?? '{}'
-  try {
-    const parsed = JSON.parse(content) as { items?: GeneratedKnowledgeItem[] }
-    return parsed.items ?? []
-  } catch {
-    throw new Error('AI 返回的内容格式异常，请重试。原始内容: ' + content.slice(0, 200))
-  }
+  return parseGeneratedItems(response.choices[0]?.message?.content ?? '')
 }
 
 /** Generate a catch-up learning checklist from a completed local project's scanned contents. */
@@ -111,13 +127,7 @@ export async function generateKnowledgeListFromProject(projectInfo: ProjectScanR
     ]
   })
 
-  const content = response.choices[0]?.message?.content ?? '{}'
-  try {
-    const parsed = JSON.parse(content) as { items?: GeneratedKnowledgeItem[] }
-    return parsed.items ?? []
-  } catch {
-    throw new Error('AI 返回的内容格式异常，请重试。原始内容: ' + content.slice(0, 200))
-  }
+  return parseGeneratedItems(response.choices[0]?.message?.content ?? '')
 }
 
 /** Generate both a catch-up knowledge list AND a day-by-day study plan from a completed project.
@@ -128,7 +138,6 @@ export async function generateStudyPlanAndItems(
 ): Promise<{ items: GeneratedKnowledgeItem[]; planMd: string }> {
   // --- Call 1: generate items (JSON) ---
   const items = await generateKnowledgeListFromProject(projectInfo)
-  if (items.length === 0) throw new Error('AI 未返回任何知识点，请重试。')
 
   // --- Call 2: generate plan as plain markdown (no JSON wrapping) ---
   const c = getClient()
