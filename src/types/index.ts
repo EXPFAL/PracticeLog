@@ -103,6 +103,8 @@ export interface ElectronAPI {
   exportPdf: (practiceId: number) => Promise<string>
 
   openFolder: () => Promise<string | null>
+  openFile: () => Promise<string[] | null>
+  dbBackup: () => Promise<string>
 
   aiConfigGet: () => Promise<{ configured: boolean }>
   aiConfigSet: (key: string) => Promise<{ configured: boolean }>

@@ -3,7 +3,10 @@ import { ref, watch } from 'vue'
 import { NCard, NDatePicker, NForm, NFormItem, NInput, NButton, NSpace, NList, NListItem, NTag, useMessage } from 'naive-ui'
 import { useLogStore } from '../../stores/log'
 
-const props = defineProps<{ practiceId: number }>()
+const props = defineProps<{
+  practiceId: number
+  externalDate?: string | null
+}>()
 const logStore = useLogStore()
 const message = useMessage()
 
@@ -19,8 +22,12 @@ function formatDate(ts: number): string {
   return new Date(ts).toISOString().slice(0, 10)
 }
 
-watch(selectedDate, () => {
-  const dateStr = formatDate(selectedDate.value)
+function parseDate(dateStr: string): number {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, m - 1, d).getTime()
+}
+
+function loadFormForDate(dateStr: string) {
   const existing = logStore.logs.find(l => l.date === dateStr)
   if (existing) {
     form.value.what_done = existing.what_done ?? ''
@@ -30,7 +37,17 @@ watch(selectedDate, () => {
   } else {
     form.value = { what_done: '', problems: '', solutions: '', reflection: '' }
   }
+}
+
+watch(selectedDate, () => {
+  loadFormForDate(formatDate(selectedDate.value))
 }, { immediate: true })
+
+watch(() => props.externalDate, (newDate) => {
+  if (newDate) {
+    selectedDate.value = parseDate(newDate)
+  }
+})
 
 async function handleSave() {
   if (!form.value.what_done.trim() && !form.value.problems.trim()) {
@@ -72,7 +89,7 @@ async function handleSave() {
     <NList v-if="logStore.logs.length > 0" bordered style="margin-top: 16px">
       <NListItem v-for="log in logStore.logs.slice(0, 10)" :key="log.id">
         <NSpace justify="space-between">
-          <NTag type="info" size="small">{{ log.date }}</NTag>
+          <NTag type="info" size="small" style="cursor: pointer" @click="selectedDate = parseDate(log.date)">{{ log.date }}</NTag>
         </NSpace>
         <div v-if="log.what_done" style="margin-top: 4px; font-size: 13px">{{ log.what_done }}</div>
         <div v-if="log.problems" style="margin-top: 2px; font-size: 12px; color: #e88">❓ {{ log.problems }}</div>

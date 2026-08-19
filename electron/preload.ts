@@ -39,6 +39,10 @@ contextBridge.exposeInMainWorld('api', {
 
   // Dialog
   openFolder: () => ipcRenderer.invoke('dialog:openFolder'),
+  openFile: () => ipcRenderer.invoke('dialog:openFile'),
+
+  // Database
+  dbBackup: () => ipcRenderer.invoke('db:backup'),
 
   // AI Config
   aiConfigGet: () => ipcRenderer.invoke('ai:config:get'),

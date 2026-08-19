@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { NCard, NGrid, NGi, NStatistic, NList, NListItem, NTag, NButton, NEmpty, NSpin } from 'naive-ui'
+import { NCard, NGrid, NGi, NStatistic, NList, NListItem, NTag, NButton, NEmpty, NSpin, NSpace, useMessage } from 'naive-ui'
 import { useRouter } from 'vue-router'
 import { usePracticeStore } from '../stores/practice'
 import type { DailyLog, KnowledgeItem } from '../types'
 
 const router = useRouter()
 const practiceStore = usePracticeStore()
+const message = useMessage()
 const recentLogs = ref<DailyLog[]>([])
 const allKnowledge = ref<KnowledgeItem[]>([])
 const loading = ref(true)
+const backingUp = ref(false)
 
 onMounted(async () => {
   await practiceStore.fetchAll()
@@ -21,11 +23,26 @@ const practiceCount = computed(() => practiceStore.practices.length)
 async function openPractice(id: number) {
   router.push(`/practice/${id}`)
 }
+
+async function handleBackup() {
+  backingUp.value = true
+  try {
+    const path = await window.api.dbBackup()
+    message.success(`备份成功: ${path}`)
+  } catch (e: unknown) {
+    message.error('备份失败: ' + String(e))
+  } finally {
+    backingUp.value = false
+  }
+}
 </script>
 
 <template>
   <div>
-    <h2 style="margin-bottom: 24px">PracticeLog — 实践学习助手</h2>
+    <NSpace justify="space-between" align="center" style="margin-bottom: 24px">
+      <h2>PracticeLog — 实践学习助手</h2>
+      <NButton :loading="backingUp" @click="handleBackup">备份数据库</NButton>
+    </NSpace>
 
     <NSpin :show="loading">
       <NGrid :cols="3" :x-gap="16" :y-gap="16" style="margin-bottom: 24px">

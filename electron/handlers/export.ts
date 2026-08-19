@@ -144,4 +144,32 @@ blockquote{border-left:3px solid #ccc;margin:0.5em 0;padding:0.2em 1em;color:#66
     if (result.canceled || result.filePaths.length === 0) return null
     return result.filePaths[0]
   })
+
+  ipcMain.handle('dialog:openFile', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile', 'multiSelections'],
+      filters: [
+        { name: '文档', extensions: ['pdf', 'txt', 'md', 'rst', 'log', 'csv'] },
+        { name: '所有文件', extensions: ['*'] }
+      ]
+    })
+    if (result.canceled || result.filePaths.length === 0) return null
+    return result.filePaths
+  })
+
+  ipcMain.handle('db:backup', async () => {
+    const { copyFile } = await import('fs/promises')
+    const backupDir = getExportsDir()
+    const backupSubdir = join(backupDir, 'backup')
+    await mkdir(backupSubdir, { recursive: true })
+
+    const dataDir = app.isPackaged
+      ? join(app.getPath('userData'), 'data')
+      : join(app.getAppPath(), 'data')
+    const dbPath = join(dataDir, 'practice.db')
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    const backupPath = join(backupSubdir, `practice-${timestamp}.db`)
+    await copyFile(dbPath, backupPath)
+    return backupPath
+  })
 }

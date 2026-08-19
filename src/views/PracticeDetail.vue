@@ -16,6 +16,7 @@ const practiceStore = usePracticeStore()
 const message = useMessage()
 const loading = ref(true)
 const activeTab = ref('config')
+const selectedLogDate = ref<string | null>(null)
 
 const practiceId = Number(route.params.id)
 
@@ -52,8 +53,8 @@ onMounted(async () => {
         </NTabPane>
 
         <NTabPane name="log" tab="每日日志">
-          <LogCalendar :practice-id="practiceId" />
-          <DailyLogEditor :practice-id="practiceId" />
+          <LogCalendar :practice-id="practiceId" @select="selectedLogDate = $event" />
+          <DailyLogEditor :practice-id="practiceId" :external-date="selectedLogDate" />
         </NTabPane>
 
         <NTabPane name="project" tab="项目复盘">
