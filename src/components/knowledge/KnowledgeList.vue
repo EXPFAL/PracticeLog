@@ -10,6 +10,7 @@ const props = defineProps<{ practiceId: number }>()
 const knowledgeStore = useKnowledgeStore()
 const message = useMessage()
 const showAdd = ref(false)
+const generatingProject = ref(false)
 
 const form = ref({
   concept: '',
@@ -45,6 +46,20 @@ async function handleGenerate() {
   }
 }
 
+async function handleGenerateFromProject() {
+  const folder = await window.api.openFolder()
+  if (!folder) return
+  generatingProject.value = true
+  try {
+    const count = await knowledgeStore.generateFromProject(props.practiceId, folder)
+    message.success(`已从项目生成 ${count} 个知识点，进入下方清单补课`)
+  } catch (e: unknown) {
+    message.error('生成失败: ' + String(e))
+  } finally {
+    generatingProject.value = false
+  }
+}
+
 async function handleAdd() {
   if (!form.value.concept.trim()) {
     message.warning('请输入概念名称')
@@ -72,6 +87,7 @@ async function handleAdd() {
     <NSpace justify="space-between" align="center" style="margin-bottom: 16px">
       <NSpace>
         <AiGenerateButton label="AI 生成学习清单" :loading="knowledgeStore.loading" @click="handleGenerate" />
+        <NButton :loading="generatingProject" @click="handleGenerateFromProject">从项目文件夹生成</NButton>
         <NButton @click="showAdd = true">手动添加</NButton>
       </NSpace>
       <NSpace v-if="stats.total > 0">

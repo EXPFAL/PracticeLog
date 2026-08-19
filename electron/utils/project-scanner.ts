@@ -13,6 +13,7 @@ export interface ProjectScanResult {
   gitLog: string | null
   packageJson: string | null
   stats: ProjectStats | null
+  keySources: string
 }
 
 export interface ProjectStats {
@@ -26,6 +27,11 @@ export interface ProjectStats {
 const IGNORE_DIRS = new Set([
   'node_modules', '.git', 'dist', 'out', 'build', '.next', '__pycache__', '.venv', 'venv',
   '.mimocode', 'release', '.electron-cache', '.npm-cache', '.tmp'
+])
+
+const KEY_SOURCE_EXTS = new Set([
+  '.ts', '.tsx', '.js', '.jsx', '.vue', '.py', '.java', '.c', '.cpp', '.cs', '.go', '.rs',
+  '.rb', '.php', '.kt', '.swift', '.sql', '.sh', '.ps1', '.md', '.rst', '.txt'
 ])
 
 const LANG_MAP: Record<string, string> = {
@@ -88,6 +94,38 @@ async function countLines(dirPath: string, stats: ProjectStats, depth = 0): Prom
       }
     } catch { /* skip */ }
   }
+}
+
+/** Collect snippets from a handful of representative files so AI can ground its analysis in the actual code. */
+async function collectKeySources(dirPath: string): Promise<string> {
+  const parts: string[] = []
+  const seen = new Set<string>()
+  const visit = async (dir: string, depth: number): Promise<void> => {
+    if (depth > 2 || parts.length >= 6) return
+    let entries: string[]
+    try { entries = await readdir(dir) } catch { return }
+    entries.sort()
+    for (const entry of entries) {
+      if (parts.length >= 6) return
+      if (IGNORE_DIRS.has(entry)) continue
+      const full = join(dir, entry)
+      let s
+      try { s = await stat(full) } catch { continue }
+      if (s.isDirectory()) {
+        await visit(full, depth + 1)
+        continue
+      }
+      const ext = extname(entry).toLowerCase()
+      if (!KEY_SOURCE_EXTS.has(ext) || seen.has(entry)) continue
+      seen.add(entry)
+      try {
+        const body = (await readFile(full, 'utf-8')).split('\n').slice(0, 150).join('\n')
+        parts.push(`### ${full.slice(dirPath.length).replace(/\\/g, '/')}\n\`\`\`\n${body}\n\`\`\``)
+      } catch { /* binary or unreadable */ }
+    }
+  }
+  await visit(dirPath, 0)
+  return parts.join('\n\n').slice(0, 15000)
 }
 
 export async function scanProject(projectPath: string): Promise<ProjectScanResult> {
@@ -162,5 +200,7 @@ export async function scanProject(projectPath: string): Promise<ProjectScanResul
     }
   } catch { /* ignore */ }
 
-  return { name, path: projectPath, readme, fileTree, gitLog, packageJson, stats }
+  const keySources = await collectKeySources(projectPath)
+
+  return { name, path: projectPath, readme, fileTree, gitLog, packageJson, stats, keySources }
 }

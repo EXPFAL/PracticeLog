@@ -68,6 +68,53 @@ export async function generateKnowledgeList(materials: string[]): Promise<Genera
   }
 }
 
+/** Generate a catch-up learning checklist from a completed local project's scanned contents. */
+export async function generateKnowledgeListFromProject(projectInfo: ProjectScanResult): Promise<GeneratedKnowledgeItem[]> {
+  const c = getClient()
+
+  const context = [
+    `项目名: ${projectInfo.name}`,
+    projectInfo.readme ? `README:\n${projectInfo.readme.slice(0, 4000)}` : '',
+    `文件结构:\n${projectInfo.fileTree.slice(0, 2500)}`,
+    projectInfo.keySources ? `关键文件源码:\n${projectInfo.keySources}` : '',
+    projectInfo.gitLog ? `Git 提交记录:\n${projectInfo.gitLog}` : '',
+    projectInfo.packageJson ? `package.json:\n${projectInfo.packageJson.slice(0, 2000)}` : '',
+    projectInfo.stats ? `语言统计:\n${JSON.stringify(projectInfo.stats.languages)}` : ''
+  ].filter(Boolean).join('\n\n')
+
+  const response = await c.chat.completions.create({
+    model: getModel(),
+    temperature: 0.4,
+    response_format: { type: 'json_object' },
+    messages: [
+      {
+        role: 'system',
+        content: `你是一个学习规划助手。用户完成了一个本地项目，但当初是照葫芦画瓢做出来的，对里面的核心概念并不真正理解，需要补课。
+请根据项目代码、README、依赖与提交记录，识别该项目用到的主要技术/概念，生成一份分层补课学习清单。
+输出 JSON 格式：{ "items": [ { "concept": "...", "one_line_explain": "...", "importance": "必问|加分|了解", "resource": "推荐学习资源" } ] }
+- 必问：完成这个项目时一定接触过、被追问时几乎必答的核心概念
+- 加分：进阶知识，能展现深度
+- 了解：拓展内容，有时间再学
+每层 3-8 项，总共 15-30 项。
+要求：
+- concept 要具体（如 "Action Chunking"、"FTS5 全文检索"、"contextIsolation"），不要泛泛的 "机器学习"
+- one_line_explain 用一两句话讲清楚，尽量结合项目里的实际用法（如某个参数/文件）
+- resource 给出可直接搜索的关键词或资料名
+用中文。`
+      },
+      { role: 'user', content: `请根据以下项目信息生成补课学习清单：\n\n${context}` }
+    ]
+  })
+
+  const content = response.choices[0]?.message?.content ?? '{}'
+  try {
+    const parsed = JSON.parse(content) as { items?: GeneratedKnowledgeItem[] }
+    return parsed.items ?? []
+  } catch {
+    throw new Error('AI 返回的内容格式异常，请重试。原始内容: ' + content.slice(0, 200))
+  }
+}
+
 export interface GeneratedProjectArchive {
   name: string
   tech_stack: string

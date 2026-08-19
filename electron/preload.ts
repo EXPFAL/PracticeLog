@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('api', {
   knowledgeUpdate: (id: number, data: unknown) => ipcRenderer.invoke('knowledge:update', id, data),
   knowledgeDelete: (id: number) => ipcRenderer.invoke('knowledge:delete', id),
   knowledgeGenerate: (practiceId: number) => ipcRenderer.invoke('knowledge:generate', practiceId),
+  knowledgeGenerateFromProject: (practiceId: number, projectPath: string) => ipcRenderer.invoke('knowledge:generateFromProject', practiceId, projectPath),
   knowledgeListAll: () => ipcRenderer.invoke('knowledge:listAll'),
 
   // Daily Log

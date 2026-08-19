@@ -103,6 +103,7 @@ export interface ElectronAPI {
   knowledgeUpdate: (id: number, data: Partial<Omit<KnowledgeItem, 'id' | 'created_at'>>) => Promise<void>
   knowledgeDelete: (id: number) => Promise<void>
   knowledgeGenerate: (practiceId: number) => Promise<number>
+  knowledgeGenerateFromProject: (practiceId: number, projectPath: string) => Promise<number>
   knowledgeListAll: () => Promise<KnowledgeItem[]>
 
   logList: (practiceId: number) => Promise<DailyLog[]>

@@ -42,5 +42,11 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     return count
   }
 
-  return { items, loading, error, fetch, create, update, remove, generate }
+  async function generateFromProject(practiceId: number, path: string) {
+    const count = await window.api.knowledgeGenerateFromProject(practiceId, path)
+    await fetch(practiceId)
+    return count
+  }
+
+  return { items, loading, error, fetch, create, update, remove, generate, generateFromProject }
 })
