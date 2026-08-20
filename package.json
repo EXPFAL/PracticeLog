@@ -1,6 +1,6 @@
 {
   "name": "practice-log",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "实践学习助手 — 实践前学习，实践中记录，实践后复盘",
   "main": "./out/main/index.js",
   "scripts": {
