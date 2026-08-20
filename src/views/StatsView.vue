@@ -3,6 +3,7 @@ import { onMounted, ref, computed } from 'vue'
 import { NCard, NGrid, NGi, NStatistic, NSkeleton, NTag, NSpace, NProgress, NList, NListItem, NEmpty } from 'naive-ui'
 import { usePracticeStore } from '../stores/practice'
 import ProgressPie from '../components/common/ProgressPie.vue'
+import { daysAgoLocal } from '../utils/date'
 import type { KnowledgeItem, DailyLog } from '../types'
 
 const practiceStore = usePracticeStore()
@@ -33,14 +34,12 @@ const total = computed(() => allKnowledge.value.length)
 const masteredPct = computed(() => total.value ? Math.round(mastered.value / total.value * 100) : 0)
 
 const weeklyLogs = computed(() => {
-  const d = new Date(); d.setDate(d.getDate() - 7)
-  const cutoff = d.toISOString().slice(0, 10)
+  const cutoff = daysAgoLocal(7)
   return allLogs.value.filter(l => l.date >= cutoff)
 })
 
 const monthlyLogs = computed(() => {
-  const d = new Date(); d.setDate(d.getDate() - 30)
-  const cutoff = d.toISOString().slice(0, 10)
+  const cutoff = daysAgoLocal(30)
   return allLogs.value.filter(l => l.date >= cutoff)
 })
 

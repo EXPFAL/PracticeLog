@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref, watch, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { NSelect, NButton, NCard, NSpace, NEmpty, NSpin, NTabs, NTabPane, useMessage } from 'naive-ui'
 import MarkdownIt from 'markdown-it'
 import { usePracticeStore } from '../stores/practice'
 
+const route = useRoute()
 const practiceStore = usePracticeStore()
 const message = useMessage()
 const selectedId = ref<number | null>(null)
@@ -19,7 +21,21 @@ const renderedHtml = computed(() => {
   return md.render(markdownText.value)
 })
 
-onMounted(() => practiceStore.fetchAll())
+onMounted(async () => {
+  await practiceStore.fetchAll()
+  const raw = route.query.practiceId
+  const id = typeof raw === 'string' ? Number(raw) : NaN
+  if (!isNaN(id) && id > 0 && practiceStore.practices.some(p => p.id === id)) {
+    selectedId.value = id
+  }
+})
+
+watch(() => route.query.practiceId, (raw) => {
+  const id = typeof raw === 'string' ? Number(raw) : NaN
+  if (!isNaN(id) && id > 0 && practiceStore.practices.some(p => p.id === id)) {
+    selectedId.value = id
+  }
+})
 
 const options = computed(() =>
   practiceStore.practices.map(p => ({ label: p.title, value: p.id }))

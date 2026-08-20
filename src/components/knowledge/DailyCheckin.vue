@@ -1,66 +1,60 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { NCard, NCheckbox, NSpace, NButton, NDivider, NTag, useMessage } from 'naive-ui'
+import { computed, onMounted, watch } from 'vue'
+import { NCard, NButton, NSpace, NTag, NEmpty, useMessage } from 'naive-ui'
 import { useKnowledgeStore } from '../../stores/knowledge'
+import { formatLocalDate } from '../../utils/date'
 import type { KnowledgeItem } from '../../types'
 
-const props = defineProps<{ items: KnowledgeItem[]; practiceId: number }>()
+const props = defineProps<{ practiceId: number }>()
 const knowledgeStore = useKnowledgeStore()
 const message = useMessage()
 
-const today = new Date().toISOString().slice(0, 10)
-const checked = ref<Set<number>>(new Set())
-const confirming = ref(false)
+const today = formatLocalDate()
+const unmastered = computed(() => knowledgeStore.items.filter(i => i.status !== '已掌握'))
 
-const unmastered = computed(() => props.items.filter(i => i.status !== '已掌握'))
+onMounted(() => {
+  if (knowledgeStore.items.length === 0) knowledgeStore.fetch(props.practiceId)
+})
 
-function toggle(id: number) {
-  if (checked.value.has(id)) {
-    checked.value.delete(id)
-  } else {
-    checked.value.add(id)
-  }
+watch(() => props.practiceId, (id) => knowledgeStore.fetch(id))
+
+function nextStatus(status: KnowledgeItem['status']): KnowledgeItem['status'] {
+  if (status === '未学') return '学习中'
+  return '已掌握'
 }
 
-async function handleConfirmCheckin() {
-  confirming.value = true
+async function advance(item: KnowledgeItem) {
+  const status = nextStatus(item.status)
   try {
-    for (const id of checked.value) {
-      const item = props.items.find(i => i.id === id)
-      if (item && item.status === '未学') {
-        await knowledgeStore.update(id, { status: '学习中' })
-      }
-    }
-    message.success(`已打卡 ${checked.value.size} 项`)
-    checked.value.clear()
+    await knowledgeStore.update(item.id, { status })
+    message.success(status === '学习中' ? `开始学习「${item.concept}」` : `已掌握「${item.concept}」`)
   } catch (e: unknown) {
-    message.error('打卡失败: ' + String(e))
-  } finally {
-    confirming.value = false
+    message.error('更新失败: ' + String(e))
   }
 }
 </script>
 
 <template>
-  <NCard v-if="unmastered.length > 0" title="每日打卡" size="small" style="margin-bottom: 16px">
+  <NCard v-if="knowledgeStore.items.length > 0" title="今日打卡" size="small" style="margin-bottom: 16px">
     <template #header-extra>
-      <span style="font-size: 12px; color: var(--n-text-color-3)">{{ today }}</span>
+      <span style="font-size: 12px; color: var(--n-text-color-3)">{{ today }} · 点一次推进状态</span>
     </template>
-    <NSpace vertical :size="4">
-      <NCheckbox
+    <NEmpty v-if="unmastered.length === 0" description="这项实践的知识点都已掌握" size="small" />
+    <NSpace v-else vertical :size="8">
+      <div
         v-for="item in unmastered"
         :key="item.id"
-        :checked="checked.has(item.id)"
-        :disabled="confirming"
-        @update:checked="toggle(item.id)"
+        style="display: flex; justify-content: space-between; align-items: center; gap: 8px"
       >
-        {{ item.concept }}
-        <NTag v-if="item.status === '学习中'" size="tiny" type="warning" style="margin-left: 4px">学习中</NTag>
-      </NCheckbox>
+        <div>
+          {{ item.concept }}
+          <NTag v-if="item.status === '学习中'" size="tiny" type="warning" style="margin-left: 4px">学习中</NTag>
+          <NTag v-else size="tiny" type="default" style="margin-left: 4px">未学</NTag>
+        </div>
+        <NButton size="tiny" type="primary" ghost @click="advance(item)">
+          {{ item.status === '未学' ? '开始学' : '标为已掌握' }}
+        </NButton>
+      </div>
     </NSpace>
-    <NDivider style="margin: 12px 0" />
-    <NButton size="small" type="primary" :disabled="checked.size === 0" :loading="confirming" @click="handleConfirmCheckin">
-      确认打卡 ({{ checked.size }})
-    </NButton>
   </NCard>
 </template>

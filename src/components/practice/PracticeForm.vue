@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { NForm, NFormItem, NInput, NDatePicker, NButton, NSpace, useMessage } from 'naive-ui'
 import { usePracticeStore } from '../../stores/practice'
+import { timestampToLocalDate, localDateToTimestamp } from '../../utils/date'
 
 const props = defineProps<{ practiceId: number }>()
 const practiceStore = usePracticeStore()
@@ -21,8 +22,8 @@ const form = ref({
 onMounted(() => {
   if (practiceStore.current) {
     form.value.title = practiceStore.current.title
-    form.value.start_date = practiceStore.current.start_date ? new Date(practiceStore.current.start_date).getTime() : null
-    form.value.end_date = practiceStore.current.end_date ? new Date(practiceStore.current.end_date).getTime() : null
+    form.value.start_date = practiceStore.current.start_date ? localDateToTimestamp(practiceStore.current.start_date) : null
+    form.value.end_date = practiceStore.current.end_date ? localDateToTimestamp(practiceStore.current.end_date) : null
     form.value.location = practiceStore.current.location ?? ''
     form.value.advisor = practiceStore.current.advisor ?? ''
     form.value.notes = practiceStore.current.notes ?? ''
@@ -34,7 +35,7 @@ onMounted(() => {
 })
 
 function formatDate(ts: number | null): string | null {
-  return ts ? new Date(ts).toISOString().slice(0, 10) : null
+  return ts ? timestampToLocalDate(ts) : null
 }
 
 async function handleSave() {

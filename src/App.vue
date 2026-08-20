@@ -10,7 +10,6 @@ const route = useRoute()
 const collapsed = ref(false)
 const isDark = ref(localStorage.getItem('theme') === 'dark')
 const searchQuery = ref('')
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
 const theme = computed(() => isDark.value ? darkTheme : null)
 
@@ -32,6 +31,13 @@ const menuOptions = [
   { label: '导出', key: '/export', icon: () => h(NIcon, null, { default: () => h(ExportOutlined) }) },
   { label: '设置', key: '/settings', icon: () => h(NIcon, null, { default: () => h(SettingOutlined) }) }
 ]
+
+const activeMenuKey = computed(() => {
+  const path = route.path
+  if (path.startsWith('/practice/')) return '/practices'
+  if (path === '/search') return ''
+  return path
+})
 
 function handleMenuUpdate(key: string) {
   router.push(key)
@@ -55,7 +61,6 @@ onMounted(async () => {
 })
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
-  if (debounceTimer) clearTimeout(debounceTimer)
 })
 
 const error = ref<Error | null>(null)
@@ -72,12 +77,7 @@ function handleSearch() {
 
 function handleSearchInput(val: string) {
   searchQuery.value = val
-  if (debounceTimer) clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => {
-    if (val.trim()) {
-      router.push({ path: '/search', query: { q: val.trim() } })
-    }
-  }, 400)
+  // Enter 才跳转；输入只更新本地，避免边打字边离开当前页
 }
 </script>
 
@@ -105,7 +105,7 @@ function handleSearchInput(val: string) {
               {{ collapsed ? 'PL' : 'PracticeLog' }}
             </div>
             <NMenu
-              :value="route.path"
+              :value="activeMenuKey"
               :collapsed="collapsed"
               :collapsed-width="64"
               :collapsed-icon-size="22"

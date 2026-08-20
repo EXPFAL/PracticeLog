@@ -1,22 +1,17 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import MarkdownIt from 'markdown-it'
-import { NButton, NSpace, NCollapse, NCollapseItem, NTag, NEmpty, NSpin, NDrawer, NDrawerContent, NForm, NFormItem, NInput, NSelect, NTabs, NTabPane, useMessage } from 'naive-ui'
+import { NButton, NSpace, NCollapse, NCollapseItem, NTag, NEmpty, NSpin, NDrawer, NDrawerContent, NForm, NFormItem, NInput, NSelect, useMessage } from 'naive-ui'
 import { useKnowledgeStore } from '../../stores/knowledge'
 import AiGenerateButton from '../common/AiGenerateButton.vue'
 import KnowledgeItem from './KnowledgeItem.vue'
-import DailyCheckin from './DailyCheckin.vue'
+import type { Material } from '../../types'
 
 const props = defineProps<{ practiceId: number }>()
 const knowledgeStore = useKnowledgeStore()
 const message = useMessage()
 const showAdd = ref(false)
 const generatingProject = ref(false)
-const studyPlanMd = ref('')
-const showPlanDrawer = ref(false)
-
-const md = new MarkdownIt({ html: false, linkify: true })
-const renderedPlan = computed(() => studyPlanMd.value ? md.render(studyPlanMd.value) : '')
+const materials = ref<Material[]>([])
 
 const form = ref({
   concept: '',
@@ -25,7 +20,23 @@ const form = ref({
   resource: ''
 })
 
-onMounted(() => knowledgeStore.fetch(props.practiceId))
+onMounted(async () => {
+  await Promise.all([
+    knowledgeStore.fetch(props.practiceId),
+    knowledgeStore.fetchStudyPlan(props.practiceId),
+    refreshMaterials()
+  ])
+})
+
+async function refreshMaterials() {
+  try {
+    materials.value = await window.api.materialList(props.practiceId)
+  } catch {
+    materials.value = []
+  }
+}
+
+const hasExtractedText = computed(() => materials.value.some(m => !!m.extracted_text))
 
 const grouped = computed(() => {
   const groups: Record<string, typeof knowledgeStore.items> = { '必问': [], '加分': [], '了解': [] }
@@ -44,6 +55,11 @@ const stats = computed(() => {
 })
 
 async function handleGenerate() {
+  await refreshMaterials()
+  if (!hasExtractedText.value) {
+    message.warning('请先在上方上传资料并提取文本，或改用「从项目文件夹生成」')
+    return
+  }
   try {
     const count = await knowledgeStore.generate(props.practiceId)
     message.success(`AI 生成了 ${count} 个知识点`)
@@ -57,27 +73,13 @@ async function handleGenerateFromProject() {
   if (!folder) return
   generatingProject.value = true
   try {
-    const { count, planMd } = await knowledgeStore.generateFromProject(props.practiceId, folder)
-    message.success(`已从项目生成 ${count} 个知识点`)
-    if (planMd) {
-      studyPlanMd.value = planMd
-      showPlanDrawer.value = true
-    } else {
-      message.warning('知识点已生成，但补课计划为空，请重试')
-    }
+    const { count } = await knowledgeStore.generateFromProject(props.practiceId, folder)
+    await knowledgeStore.fetchStudyPlan(props.practiceId)
+    message.success(`已从项目生成 ${count} 个知识点，补课计划在下方`)
   } catch (e: unknown) {
     message.error('生成失败: ' + String(e))
   } finally {
     generatingProject.value = false
-  }
-}
-
-async function copyPlan() {
-  try {
-    await navigator.clipboard.writeText(studyPlanMd.value)
-    message.success('已复制到剪贴板')
-  } catch {
-    message.error('复制失败，请手动选择文本')
   }
 }
 
@@ -107,9 +109,13 @@ async function handleAdd() {
   <div>
     <NSpace justify="space-between" align="center" style="margin-bottom: 16px">
       <NSpace>
-        <AiGenerateButton label="AI 生成学习清单" :loading="knowledgeStore.loading" @click="handleGenerate" />
+        <AiGenerateButton
+          label="AI 生成学习清单"
+          :loading="knowledgeStore.loading"
+          :disabled="generatingProject"
+          @click="handleGenerate"
+        />
         <NButton :loading="generatingProject" @click="handleGenerateFromProject">从项目文件夹生成</NButton>
-        <NButton v-if="studyPlanMd" @click="showPlanDrawer = true">查看补课计划</NButton>
         <NButton @click="showAdd = true">手动添加</NButton>
       </NSpace>
       <NSpace v-if="stats.total > 0">
@@ -120,10 +126,17 @@ async function handleAdd() {
       </NSpace>
     </NSpace>
 
-    <DailyCheckin v-if="knowledgeStore.items.length > 0" :items="knowledgeStore.items" :practice-id="practiceId" />
-
     <NSpin :show="knowledgeStore.loading">
-      <NEmpty v-if="knowledgeStore.items.length === 0 && !knowledgeStore.loading" description="还没有学习条目，试试 AI 生成" />
+      <NEmpty v-if="knowledgeStore.items.length === 0 && !knowledgeStore.loading">
+        <template #extra>
+          <div style="max-width: 420px; font-size: 13px; color: var(--n-text-color-2); line-height: 1.7; text-align: left">
+            <p style="margin: 0 0 8px">还没有学习条目。任选一条路开始：</p>
+            <p style="margin: 0 0 4px">1. 上方上传老师资料并提取文本 →「AI 生成学习清单」</p>
+            <p style="margin: 0 0 4px">2. 「从项目文件夹生成」→ 同时得到知识点和补课计划</p>
+            <p style="margin: 0">AI 需要在「设置」里配置 API Key。</p>
+          </div>
+        </template>
+      </NEmpty>
 
       <NCollapse v-else default-expanded-names="必问">
         <NCollapseItem v-for="(items, level) in grouped" :key="level" :name="level" :title="`${level}（${items.length}）`">
@@ -165,37 +178,5 @@ async function handleAdd() {
         </template>
       </NDrawerContent>
     </NDrawer>
-
-    <NDrawer v-model:show="showPlanDrawer" :width="720" placement="right">
-      <NDrawerContent :native-scrollbar="false">
-        <template #header>
-          <NSpace justify="space-between" align="center" style="width: 100%">
-            <span style="font-weight: 600; font-size: 16px">补课计划</span>
-            <NButton size="small" quaternary @click="copyPlan">复制 Markdown</NButton>
-          </NSpace>
-        </template>
-        <NTabs type="line" animated>
-          <NTabPane name="rendered" tab="渲染预览">
-            <div class="study-plan-preview" v-html="renderedPlan" />
-          </NTabPane>
-          <NTabPane name="source" tab="Markdown 源码">
-            <pre style="white-space: pre-wrap; font-size: 13px; line-height: 1.6;">{{ studyPlanMd }}</pre>
-          </NTabPane>
-        </NTabs>
-      </NDrawerContent>
-    </NDrawer>
   </div>
 </template>
-
-<style scoped>
-.study-plan-preview :deep(h2) { font-size: 20px; margin-top: 24px; margin-bottom: 12px; color: var(--n-title-text-color); border-bottom: 1px solid var(--n-border-color); padding-bottom: 8px; }
-.study-plan-preview :deep(h3) { font-size: 16px; margin-top: 20px; margin-bottom: 8px; color: var(--n-title-text-color); }
-.study-plan-preview :deep(h4) { font-size: 14px; margin-top: 16px; margin-bottom: 6px; color: var(--n-title-text-color); }
-.study-plan-preview :deep(strong) { color: var(--n-text-color); }
-.study-plan-preview :deep(code) { background: var(--n-code-color, rgba(0,0,0,0.06)); padding: 1px 5px; border-radius: 3px; font-size: 13px; }
-.study-plan-preview :deep(hr) { border: none; border-top: 1px solid var(--n-border-color); margin: 16px 0; }
-.study-plan-preview :deep(ul), .study-plan-preview :deep(ol) { padding-left: 20px; }
-.study-plan-preview :deep(li) { margin: 4px 0; line-height: 1.7; }
-.study-plan-preview :deep(p) { margin: 8px 0; line-height: 1.7; }
-.study-plan-preview :deep(blockquote) { border-left: 3px solid var(--n-color-success, #18a058); margin: 8px 0; padding: 4px 12px; color: var(--n-text-color-2); }
-</style>

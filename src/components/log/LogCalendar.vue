@@ -1,13 +1,18 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { NCard, NCalendar, NBadge } from 'naive-ui'
 import { useLogStore } from '../../stores/log'
+import { timestampToLocalDate, localDateToTimestamp } from '../../utils/date'
 
-const props = defineProps<{ practiceId: number }>()
+const props = defineProps<{ practiceId: number; selectedDate: string }>()
 const emit = defineEmits<{ (e: 'select', date: string): void }>()
 const logStore = useLogStore()
 
 onMounted(() => logStore.fetch(props.practiceId))
+
+watch(() => props.practiceId, (id) => logStore.fetch(id))
+
+const calendarValue = computed(() => localDateToTimestamp(props.selectedDate))
 
 const logDates = computed(() => {
   const set = new Set<string>()
@@ -18,19 +23,17 @@ const logDates = computed(() => {
 })
 
 function isLogDate(timestamp: number): boolean {
-  const date = new Date(timestamp).toISOString().slice(0, 10)
-  return logDates.value.has(date)
+  return logDates.value.has(timestampToLocalDate(timestamp))
 }
 
 function handleUpdateValue(timestamp: number) {
-  const date = new Date(timestamp).toISOString().slice(0, 10)
-  emit('select', date)
+  emit('select', timestampToLocalDate(timestamp))
 }
 </script>
 
 <template>
   <NCard size="small" style="margin-bottom: 16px">
-    <NCalendar #default="{ year, month, date }" @update:value="handleUpdateValue">
+    <NCalendar :value="calendarValue" #default="{ year, month, date }" @update:value="handleUpdateValue">
       <NBadge v-if="isLogDate(new Date(year, month - 1, date).getTime())" dot processing type="success" />
     </NCalendar>
   </NCard>

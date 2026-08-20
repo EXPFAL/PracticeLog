@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { NButton, NCard, NGrid, NGi, NEmpty, NTag, NSpace, NSkeleton, NPopconfirm, NDrawer, NDrawerContent, NForm, NFormItem, NInput, NDatePicker, NSelect, useMessage } from 'naive-ui'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { usePracticeStore } from '../stores/practice'
+import { timestampToLocalDate } from '../utils/date'
 
 const router = useRouter()
+const route = useRoute()
 const practiceStore = usePracticeStore()
 const message = useMessage()
 const showCreate = ref(false)
@@ -24,6 +26,11 @@ const form = ref({
 onMounted(async () => {
   await practiceStore.fetchAll()
   loading.value = false
+  if (route.query.new === '1') showCreate.value = true
+})
+
+watch(() => route.query.new, (v) => {
+  if (v === '1') showCreate.value = true
 })
 
 const allTags = computed(() => {
@@ -45,7 +52,7 @@ const filteredPractices = computed(() => {
 })
 
 function formatDate(ts: number | null): string | null {
-  return ts ? new Date(ts).toISOString().slice(0, 10) : null
+  return ts ? timestampToLocalDate(ts) : null
 }
 
 function parseTags(tags: string | null): string[] {
@@ -58,7 +65,7 @@ async function handleCreate() {
   const tags = form.value.direction_tags
     ? JSON.stringify(form.value.direction_tags.split(/[,，、]/).map(s => s.trim()).filter(Boolean))
     : null
-  await practiceStore.create({
+  const id = await practiceStore.create({
     title: form.value.title.trim(),
     start_date: formatDate(form.value.start_date),
     end_date: formatDate(form.value.end_date),
@@ -70,6 +77,7 @@ async function handleCreate() {
   message.success('创建成功')
   showCreate.value = false
   form.value = { title: '', start_date: null, end_date: null, location: '', advisor: '', direction_tags: '', notes: '' }
+  router.push({ path: `/practice/${id}`, query: { tab: 'prepare' } })
 }
 
 async function handleDelete(id: number) {

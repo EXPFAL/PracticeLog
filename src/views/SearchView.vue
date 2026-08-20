@@ -48,8 +48,29 @@ watch(() => route.query.q, (q) => {
 
 watch(entityType, () => doSearch())
 
-function goToResult(item: SearchResult) {
-  router.push(`/practice/${item.practice_id}`)
+async function goToResult(item: SearchResult) {
+  if (item.entity_type === 'knowledge') {
+    router.push({ path: `/practice/${item.practice_id}`, query: { tab: 'prepare' } })
+    return
+  }
+  if (item.entity_type === 'project') {
+    router.push({ path: `/practice/${item.practice_id}`, query: { tab: 'review' } })
+    return
+  }
+  if (item.entity_type === 'log') {
+    let date = item.title
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      try {
+        const log = await window.api.logGet(item.entity_id)
+        if (log?.date) date = log.date
+      } catch { /* keep title */ }
+    }
+    const query: Record<string, string> = { tab: 'today' }
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) query.date = date
+    router.push({ path: `/practice/${item.practice_id}`, query })
+    return
+  }
+  router.push({ path: `/practice/${item.practice_id}` })
 }
 </script>
 
@@ -62,7 +83,7 @@ function goToResult(item: SearchResult) {
 
     <div v-if="loading" style="text-align: center; padding: 24px;">搜索中...</div>
 
-    <NEmpty v-else-if="!query" description="在顶部搜索栏输入关键词开始搜索" style="margin-top: 48px;" />
+    <NEmpty v-else-if="!query" description="在顶部搜索栏输入关键词后按 Enter 搜索" style="margin-top: 48px;" />
 
     <NEmpty v-else-if="results.length === 0" description="没有找到匹配的结果" />
 

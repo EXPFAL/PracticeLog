@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue'
-import { NCard, NDatePicker, NForm, NFormItem, NInput, NButton, NSpace, NList, NListItem, NTag, NSelect, NPopconfirm, useMessage } from 'naive-ui'
+import { NCard, NForm, NFormItem, NInput, NButton, NSpace, NList, NListItem, NTag, NSelect, NPopconfirm, NCollapse, NCollapseItem, useMessage, useDialog } from 'naive-ui'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { useLogStore } from '../../stores/log'
 
 const props = defineProps<{
   practiceId: number
-  externalDate?: string | null
+  date: string
 }>()
+const emit = defineEmits<{ (e: 'selectDate', date: string): void }>()
 const logStore = useLogStore()
 const message = useMessage()
+const dialog = useDialog()
 
-const selectedDate = ref<number>(Date.now())
 const form = ref({
   what_done: '',
   problems: '',
@@ -46,23 +47,41 @@ const templates = [
 ]
 
 const selectedTemplate = ref('blank')
-const useMarkdown = ref(true)
+const useMarkdown = ref(false)
 const showAllLogs = ref(false)
+const extraExpanded = ref<string[]>([])
+
+const formHasContent = computed(() =>
+  !!(form.value.what_done.trim() || form.value.problems.trim() || form.value.solutions.trim() || form.value.reflection.trim())
+)
 
 function applyTemplate(val: string) {
   const tpl = templates.find(t => t.value === val)
-  if (tpl && tpl.value !== 'blank') {
+  if (!tpl || tpl.value === 'blank') return
+
+  const apply = () => {
     form.value.what_done = tpl.what_done
     form.value.problems = tpl.problems
     form.value.solutions = tpl.solutions
     form.value.reflection = tpl.reflection
+    extraExpanded.value = ['extra']
   }
+
+  if (formHasContent.value) {
+    dialog.warning({
+      title: '套用模板会覆盖当前内容',
+      content: '当前已填写的日志会被模板替换。',
+      positiveText: '覆盖',
+      negativeText: '取消',
+      onPositiveClick: apply,
+      onNegativeClick: () => { selectedTemplate.value = 'blank' }
+    })
+    return
+  }
+  apply()
 }
 
-const isEditing = computed(() => {
-  const dateStr = formatDate(selectedDate.value)
-  return logStore.logs.some(l => l.date === dateStr)
-})
+const isEditing = computed(() => logStore.logs.some(l => l.date === props.date))
 
 function handleKeydown(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -73,15 +92,6 @@ function handleKeydown(e: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', handleKeydown))
 onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 
-function formatDate(ts: number): string {
-  return new Date(ts).toISOString().slice(0, 10)
-}
-
-function parseDate(dateStr: string): number {
-  const [y, m, d] = dateStr.split('-').map(Number)
-  return new Date(y, m - 1, d).getTime()
-}
-
 function loadFormForDate(dateStr: string) {
   const existing = logStore.logs.find(l => l.date === dateStr)
   if (existing) {
@@ -89,20 +99,20 @@ function loadFormForDate(dateStr: string) {
     form.value.problems = existing.problems ?? ''
     form.value.solutions = existing.solutions ?? ''
     form.value.reflection = existing.reflection ?? ''
+    extraExpanded.value = (existing.problems || existing.solutions || existing.reflection) ? ['extra'] : []
   } else {
     form.value = { what_done: '', problems: '', solutions: '', reflection: '' }
     selectedTemplate.value = 'blank'
+    extraExpanded.value = []
   }
 }
 
-watch(selectedDate, () => {
-  loadFormForDate(formatDate(selectedDate.value))
+watch(() => props.date, (dateStr) => {
+  loadFormForDate(dateStr)
 }, { immediate: true })
 
-watch(() => props.externalDate, (newDate) => {
-  if (newDate) {
-    selectedDate.value = parseDate(newDate)
-  }
+watch(() => logStore.logs, () => {
+  loadFormForDate(props.date)
 })
 
 async function handleDeleteLog(id: number) {
@@ -117,7 +127,7 @@ async function handleSave() {
   }
   await logStore.create({
     practice_id: props.practiceId,
-    date: formatDate(selectedDate.value),
+    date: props.date,
     ...form.value
   })
   message.success('日志已保存')
@@ -125,16 +135,16 @@ async function handleSave() {
 </script>
 
 <template>
-  <NCard title="日志编辑器" size="small">
+  <NCard title="今日日志" size="small">
     <template #header-extra>
-      <NTag v-if="isEditing" type="warning" size="small">编辑已有日志</NTag>
-      <NTag v-else type="info" size="small">新建日志</NTag>
+      <NSpace align="center" :size="8">
+        <span style="font-size: 13px; color: var(--n-text-color-2)">{{ date }}</span>
+        <NTag v-if="isEditing" type="warning" size="small">编辑已有日志</NTag>
+        <NTag v-else type="info" size="small">还未写</NTag>
+      </NSpace>
     </template>
     <NForm label-placement="top">
       <NSpace>
-        <NFormItem label="日期">
-          <NDatePicker v-model:value="selectedDate" type="date" style="width: 200px" />
-        </NFormItem>
         <NFormItem label="模板">
           <NSelect
             v-model:value="selectedTemplate"
@@ -151,20 +161,26 @@ async function handleSave() {
       </NSpace>
 
       <NFormItem label="今天做了什么">
-        <MdEditor v-if="useMarkdown" v-model="form.what_done" :preview="true" style="width: 100%;" />
-        <NInput v-else v-model:value="form.what_done" type="textarea" :rows="3" placeholder="完成的工作、学习的内容..." />
+        <MdEditor v-if="useMarkdown" v-model="form.what_done" :preview="false" style="width: 100%;" />
+        <NInput v-else v-model:value="form.what_done" type="textarea" :rows="3" placeholder="写一句今天做了什么…" />
       </NFormItem>
-      <NFormItem label="遇到什么问题">
-        <NInput v-model:value="form.problems" type="textarea" :rows="2" placeholder="报错、不理解的概念..." />
-      </NFormItem>
-      <NFormItem label="怎么解决的">
-        <NInput v-model:value="form.solutions" type="textarea" :rows="2" placeholder="搜索、问人、文档..." />
-      </NFormItem>
-      <NFormItem label="今日反思">
-        <MdEditor v-if="useMarkdown" v-model="form.reflection" :preview="true" style="width: 100%;" />
-        <NInput v-else v-model:value="form.reflection" type="textarea" :rows="2" placeholder="学到了什么、明天计划..." />
-      </NFormItem>
-      <NFormItem>
+
+      <NCollapse v-model:expanded-names="extraExpanded">
+        <NCollapseItem title="问题 / 解决 / 反思（可选）" name="extra">
+          <NFormItem label="遇到什么问题">
+            <NInput v-model:value="form.problems" type="textarea" :rows="2" placeholder="报错、不理解的概念..." />
+          </NFormItem>
+          <NFormItem label="怎么解决的">
+            <NInput v-model:value="form.solutions" type="textarea" :rows="2" placeholder="搜索、问人、文档..." />
+          </NFormItem>
+          <NFormItem label="今日反思">
+            <MdEditor v-if="useMarkdown" v-model="form.reflection" :preview="false" style="width: 100%;" />
+            <NInput v-else v-model:value="form.reflection" type="textarea" :rows="2" placeholder="学到了什么、明天计划..." />
+          </NFormItem>
+        </NCollapseItem>
+      </NCollapse>
+
+      <NFormItem style="margin-top: 12px">
         <NButton type="primary" @click="handleSave">保存日志 (Ctrl+S)</NButton>
       </NFormItem>
     </NForm>
@@ -172,7 +188,7 @@ async function handleSave() {
     <NList v-if="logStore.logs.length > 0" bordered style="margin-top: 16px">
       <NListItem v-for="log in logStore.logs.slice(0, showAllLogs ? undefined : 10)" :key="log.id">
         <NSpace justify="space-between" align="center">
-          <NTag type="info" size="small" style="cursor: pointer" @click="selectedDate = parseDate(log.date)">{{ log.date }}</NTag>
+          <NTag type="info" size="small" style="cursor: pointer" @click="$emit('selectDate', log.date)">{{ log.date }}</NTag>
           <NPopconfirm @positive-click="handleDeleteLog(log.id)">
             <template #trigger>
               <NButton size="tiny" type="error" quaternary>删除</NButton>

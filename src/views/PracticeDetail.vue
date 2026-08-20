@@ -1,40 +1,105 @@
 <script setup lang="ts">
-import { onMounted, ref, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { NTabs, NTabPane, NPageHeader, NButton, NSpace, NSkeleton, NResult } from 'naive-ui'
 import { usePracticeStore } from '../stores/practice'
+import { useKnowledgeStore } from '../stores/knowledge'
 import PracticeForm from '../components/practice/PracticeForm.vue'
 import MaterialUpload from '../components/practice/MaterialUpload.vue'
 import KnowledgeList from '../components/knowledge/KnowledgeList.vue'
 import StudyPlan from '../components/knowledge/StudyPlan.vue'
 import DailyLogEditor from '../components/log/DailyLogEditor.vue'
 import LogCalendar from '../components/log/LogCalendar.vue'
+import DailyCheckin from '../components/knowledge/DailyCheckin.vue'
 import ProjectArchiveForm from '../components/project/ProjectArchiveForm.vue'
+import { formatLocalDate, isPracticeTab, inferPracticeTab, type PracticeTab } from '../utils/date'
 
 const route = useRoute()
 const router = useRouter()
 const practiceStore = usePracticeStore()
+const knowledgeStore = useKnowledgeStore()
 const loading = ref(true)
 const notFound = ref(false)
-const activeTab = ref('config')
-const selectedLogDate = ref<string | null>(null)
+const activeTab = ref<PracticeTab>('prepare')
+const selectedLogDate = ref(formatLocalDate())
+const syncingQuery = ref(false)
 
 const practiceId = Number(route.params.id)
 
+function tabFromQuery(): PracticeTab | null {
+  return isPracticeTab(route.query.tab) ? route.query.tab : null
+}
+
+function dateFromQuery(): string | null {
+  const d = route.query.date
+  return typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null
+}
+
+async function resolveDefaultTab(): Promise<PracticeTab> {
+  const fromQuery = tabFromQuery()
+  if (fromQuery) return fromQuery
+
+  const [items, logs, projects] = await Promise.all([
+    window.api.knowledgeList(practiceId),
+    window.api.logList(practiceId),
+    window.api.projectList(practiceId)
+  ])
+  knowledgeStore.items = items
+  return inferPracticeTab({
+    knowledgeCount: items.length,
+    logCount: logs.length,
+    endDate: practiceStore.current?.end_date ?? null,
+    hasArchive: projects.length > 0
+  })
+}
+
+function writeQuery(tab: PracticeTab, date: string) {
+  syncingQuery.value = true
+  const query: Record<string, string> = { tab }
+  if (tab === 'today') query.date = date
+  router.replace({ query }).finally(() => {
+    syncingQuery.value = false
+  })
+}
+
 function handleKeydown(e: KeyboardEvent) {
   if (e.ctrlKey || e.metaKey) {
-    if (e.key === '1') { activeTab.value = 'config'; e.preventDefault() }
-    if (e.key === '2') { activeTab.value = 'knowledge'; e.preventDefault() }
-    if (e.key === '3') { activeTab.value = 'log'; e.preventDefault() }
-    if (e.key === '4') { activeTab.value = 'project'; e.preventDefault() }
-    if (e.key === '5') { activeTab.value = 'study'; e.preventDefault() }
+    if (e.key === '1') { activeTab.value = 'today'; e.preventDefault() }
+    if (e.key === '2') { activeTab.value = 'prepare'; e.preventDefault() }
+    if (e.key === '3') { activeTab.value = 'review'; e.preventDefault() }
   }
 }
+
+watch(activeTab, (tab) => {
+  if (syncingQuery.value) return
+  writeQuery(tab, selectedLogDate.value)
+})
+
+watch(selectedLogDate, (date) => {
+  if (syncingQuery.value || activeTab.value !== 'today') return
+  writeQuery('today', date)
+})
+
+watch(() => [route.query.tab, route.query.date], () => {
+  if (syncingQuery.value) return
+  const tab = tabFromQuery()
+  if (tab) activeTab.value = tab
+  const date = dateFromQuery()
+  if (date) selectedLogDate.value = date
+})
 
 onMounted(async () => {
   window.addEventListener('keydown', handleKeydown)
   const practice = await practiceStore.getById(practiceId)
-  if (!practice) notFound.value = true
+  if (!practice) {
+    notFound.value = true
+    loading.value = false
+    return
+  }
+  const qDate = dateFromQuery()
+  if (qDate) selectedLogDate.value = qDate
+  activeTab.value = await resolveDefaultTab()
+  if (!tabFromQuery()) writeQuery(activeTab.value, selectedLogDate.value)
   loading.value = false
 })
 
@@ -49,7 +114,7 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
       </template>
       <template #extra>
         <NSpace>
-          <NButton size="small" @click="router.push('/export')">导出</NButton>
+          <NButton size="small" @click="router.push({ path: '/export', query: { practiceId: String(practiceId) } })">导出</NButton>
         </NSpace>
       </template>
     </NPageHeader>
@@ -66,26 +131,23 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 
     <template v-else>
       <NTabs v-model:value="activeTab" type="line" animated style="margin-top: 16px">
-        <NTabPane name="config" tab="配置 (Ctrl+1)">
+        <NTabPane name="today" tab="今日 (Ctrl+1)">
+          <LogCalendar :practice-id="practiceId" :selected-date="selectedLogDate" @select="selectedLogDate = $event" />
+          <DailyCheckin :practice-id="practiceId" />
+          <DailyLogEditor :practice-id="practiceId" :date="selectedLogDate" @select-date="selectedLogDate = $event" />
+        </NTabPane>
+
+        <NTabPane name="prepare" tab="准备 (Ctrl+2)">
           <PracticeForm :practice-id="practiceId" />
           <MaterialUpload :practice-id="practiceId" />
-        </NTabPane>
-
-        <NTabPane name="knowledge" tab="学习清单 (Ctrl+2)">
           <KnowledgeList :practice-id="practiceId" />
+          <div style="margin-top: 16px">
+            <StudyPlan :practice-id="practiceId" />
+          </div>
         </NTabPane>
 
-        <NTabPane name="log" tab="每日日志 (Ctrl+3)">
-          <LogCalendar :practice-id="practiceId" @select="selectedLogDate = $event" />
-          <DailyLogEditor :practice-id="practiceId" :external-date="selectedLogDate" />
-        </NTabPane>
-
-        <NTabPane name="project" tab="项目复盘 (Ctrl+4)">
+        <NTabPane name="review" tab="复盘 (Ctrl+3)">
           <ProjectArchiveForm :practice-id="practiceId" />
-        </NTabPane>
-
-        <NTabPane name="study" tab="补课计划 (Ctrl+5)">
-          <StudyPlan :practice-id="practiceId" />
         </NTabPane>
       </NTabs>
     </template>

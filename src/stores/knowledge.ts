@@ -46,6 +46,8 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
   async function generateFromProject(practiceId: number, path: string) {
     const result = await window.api.knowledgeGenerateFromProject(practiceId, path)
     await fetch(practiceId)
+    if (result.planMd) studyPlan.value = result.planMd
+    else await fetchStudyPlan(practiceId)
     return result
   }
 

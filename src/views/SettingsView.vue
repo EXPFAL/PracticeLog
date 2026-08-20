@@ -8,6 +8,7 @@ const apiModel = ref('')
 const apiKey = ref('')
 const apiKeyConfigured = ref(false)
 const saving = ref(false)
+const backingUp = ref(false)
 
 onMounted(async () => {
   const s = await window.api.settingsGet()
@@ -45,6 +46,30 @@ async function handleClearKey() {
   await window.api.settingsSet({ apiKey: '' })
   apiKeyConfigured.value = false
   message.success('已清除 API Key')
+}
+
+async function handleBackup() {
+  backingUp.value = true
+  try {
+    const path = await window.api.dbBackup()
+    message.success(`备份成功: ${path}`)
+  } catch (e: unknown) {
+    message.error('备份失败: ' + String(e))
+  } finally {
+    backingUp.value = false
+  }
+}
+
+async function handleImport() {
+  const path = await window.api.dbSelectBackup()
+  if (!path) return
+  try {
+    await window.api.dbImport(path)
+    message.success('导入成功，正在刷新...')
+    window.location.reload()
+  } catch (e: unknown) {
+    message.error('导入失败: ' + String(e))
+  }
 }
 </script>
 
@@ -96,6 +121,16 @@ async function handleClearKey() {
       </p>
     </NCard>
 
+    <NCard title="数据备份" style="margin-bottom: 24px;">
+      <NSpace>
+        <NButton :loading="backingUp" @click="handleBackup">备份数据库</NButton>
+        <NButton @click="handleImport">导入备份</NButton>
+      </NSpace>
+      <p style="font-size: 12px; color: var(--n-text-color-3); margin-top: 12px;">
+        备份会写入 exports/backup/。导入会覆盖当前数据库，请先自行备份。
+      </p>
+    </NCard>
+
     <NCard title="数据管理" style="margin-bottom: 24px;">
       <NSpace vertical :size="12">
         <div>
@@ -114,7 +149,8 @@ async function handleClearKey() {
     <NCard title="快捷键" style="margin-bottom: 24px;">
       <NForm label-placement="left">
         <NFormItem label="全局搜索"><NTag size="small">Ctrl + K</NTag></NFormItem>
-        <NFormItem label="切换标签页"><NTag size="small">Ctrl + 1/2/3/4</NTag></NFormItem>
+        <NFormItem label="实践内页签"><NTag size="small">Ctrl + 1/2/3</NTag>（今日 / 准备 / 复盘）</NFormItem>
+        <NFormItem label="保存日志"><NTag size="small">Ctrl + S</NTag></NFormItem>
         <NFormItem label="深色模式"><NTag size="small">侧边栏灯泡图标</NTag></NFormItem>
       </NForm>
     </NCard>

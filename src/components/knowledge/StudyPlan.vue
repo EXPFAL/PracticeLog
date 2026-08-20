@@ -41,9 +41,9 @@ async function copyPlan() {
       </NSpace>
     </template>
     <NSpin :show="loading">
-      <NEmpty v-if="!loading && !knowledgeStore.studyPlan" description="还没有补课计划。到「学习清单」→「从项目文件夹生成」生成一份吧">
+      <NEmpty v-if="!loading && !knowledgeStore.studyPlan" description="还没有补课计划。用上方「从项目文件夹生成」会同时写出知识点和 14 天计划">
         <template #extra>
-          <span style="font-size: 13px; color: var(--n-text-color-3)">生成后会在这里持久保存，随时可查看</span>
+          <span style="font-size: 13px; color: var(--n-text-color-3)">生成后会保存在这里，随时可查看或复制</span>
         </template>
       </NEmpty>
       <div v-else-if="knowledgeStore.studyPlan" class="study-plan-preview" v-html="rendered" />
