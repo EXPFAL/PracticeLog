@@ -117,7 +117,13 @@ app.whenReady().then(() => {
   registerSearchHandlers()
   registerSettingsHandlers()
 
-  buildAppMenu()
+  // The native File/Edit/View menu is redundant with the in-app sidebar; drop it in
+  // the packaged app. Keep it in dev so DevTools/reload are still reachable.
+  if (process.env.ELECTRON_RENDERER_URL) {
+    buildAppMenu()
+  } else {
+    Menu.setApplicationMenu(null)
+  }
   createWindow()
   setupAutoUpdater()
 
