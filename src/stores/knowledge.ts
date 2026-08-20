@@ -4,6 +4,7 @@ import type { KnowledgeItem } from '../types'
 
 export const useKnowledgeStore = defineStore('knowledge', () => {
   const items = ref<KnowledgeItem[]>([])
+  const studyPlan = ref('')
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -48,5 +49,11 @@ export const useKnowledgeStore = defineStore('knowledge', () => {
     return result
   }
 
-  return { items, loading, error, fetch, create, update, remove, generate, generateFromProject }
+  async function fetchStudyPlan(practiceId: number) {
+    const row = await window.api.studyPlanGet(practiceId)
+    studyPlan.value = row?.content ?? ''
+    return studyPlan.value
+  }
+
+  return { items, studyPlan, loading, error, fetch, create, update, remove, generate, generateFromProject, fetchStudyPlan }
 })

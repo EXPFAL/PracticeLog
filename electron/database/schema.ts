@@ -65,6 +65,12 @@ CREATE TABLE IF NOT EXISTS project_archive (
   created_at TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS study_plan (
+  practice_id INTEGER PRIMARY KEY REFERENCES practice(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
 -- Indexes for foreign keys and common queries
 CREATE INDEX IF NOT EXISTS idx_material_practice ON material(practice_id);
 CREATE INDEX IF NOT EXISTS idx_knowledge_practice ON knowledge_item(practice_id);

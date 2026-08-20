@@ -6,6 +6,7 @@ import { usePracticeStore } from '../stores/practice'
 import PracticeForm from '../components/practice/PracticeForm.vue'
 import MaterialUpload from '../components/practice/MaterialUpload.vue'
 import KnowledgeList from '../components/knowledge/KnowledgeList.vue'
+import StudyPlan from '../components/knowledge/StudyPlan.vue'
 import DailyLogEditor from '../components/log/DailyLogEditor.vue'
 import LogCalendar from '../components/log/LogCalendar.vue'
 import ProjectArchiveForm from '../components/project/ProjectArchiveForm.vue'
@@ -26,6 +27,7 @@ function handleKeydown(e: KeyboardEvent) {
     if (e.key === '2') { activeTab.value = 'knowledge'; e.preventDefault() }
     if (e.key === '3') { activeTab.value = 'log'; e.preventDefault() }
     if (e.key === '4') { activeTab.value = 'project'; e.preventDefault() }
+    if (e.key === '5') { activeTab.value = 'study'; e.preventDefault() }
   }
 }
 
@@ -80,6 +82,10 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
 
         <NTabPane name="project" tab="项目复盘 (Ctrl+4)">
           <ProjectArchiveForm :practice-id="practiceId" />
+        </NTabPane>
+
+        <NTabPane name="study" tab="补课计划 (Ctrl+5)">
+          <StudyPlan :practice-id="practiceId" />
         </NTabPane>
       </NTabs>
     </template>

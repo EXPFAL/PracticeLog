@@ -92,6 +92,7 @@ export interface ElectronAPI {
   knowledgeGenerate: (practiceId: number) => Promise<number>
   knowledgeGenerateFromProject: (practiceId: number, projectPath: string) => Promise<{ count: number; planMd: string }>
   knowledgeListAll: () => Promise<KnowledgeItem[]>
+  studyPlanGet: (practiceId: number) => Promise<{ practice_id: number; content: string; updated_at: string } | undefined>
 
   logList: (practiceId: number) => Promise<DailyLog[]>
   logGet: (id: number) => Promise<DailyLog | undefined>

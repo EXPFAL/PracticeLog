@@ -4,6 +4,7 @@ import {
   deleteKnowledgeItem, batchCreateKnowledgeItems, type KnowledgeItemRow
 } from '../database/knowledge'
 import { listMaterials } from '../database/material'
+import { saveStudyPlan, getStudyPlan } from '../database/study-plan'
 import { generateKnowledgeList, generateStudyPlanAndItems, type GeneratedKnowledgeItem } from '../ai/deepseek'
 import { scanProject } from '../utils/project-scanner'
 import { assertExistingDir } from '../utils/paths'
@@ -66,7 +67,10 @@ export function registerKnowledgeHandlers(): void {
     const items = toKnowledgeRows(practiceId, generated)
 
     batchCreateKnowledgeItems(getDb(), items)
+    if (planMd) await saveStudyPlan(getDb(), practiceId, planMd)
     rebuildFts()
     return { count: items.length, planMd }
   })
+
+  ipcMain.handle('studyPlan:get', (_e, practiceId: number) => getStudyPlan(getDb(), practiceId))
 }

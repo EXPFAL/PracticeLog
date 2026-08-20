@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('api', {
   knowledgeGenerate: (practiceId: number) => ipcRenderer.invoke('knowledge:generate', practiceId),
   knowledgeGenerateFromProject: (practiceId: number, projectPath: string) => ipcRenderer.invoke('knowledge:generateFromProject', practiceId, projectPath),
   knowledgeListAll: () => ipcRenderer.invoke('knowledge:listAll'),
+  studyPlanGet: (practiceId: number) => ipcRenderer.invoke('studyPlan:get', practiceId),
 
   // Daily Log
   logList: (practiceId: number) => ipcRenderer.invoke('log:list', practiceId),
